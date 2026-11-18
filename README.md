@@ -1,133 +1,92 @@
-# FinPulse — Personal Finance & Budget Tracker
+# FinPulse — Intelligent Personal Finance & Wealth Operating System
 
-FinPulse is a full-stack personal finance dashboard for tracking income and
-expenses, understanding spending patterns, and managing monthly budgets. It
-provides a dark-themed React interface with financial summaries, charts,
-transaction management, category budgets, recurring transactions, and CSV
-export.
+FinPulse is an enterprise-grade, human-crafted personal wealth, budgeting, and financial management application built with **React 19**, **Vite**, **Express**, and a dual-mode **MongoDB Aggregation & In-Memory JSON Engine**.
 
-## Features
+---
 
-- Dashboard metrics for lifetime balance, monthly income, monthly expenses,
-  net savings, and savings rate
-- Month-over-month income and expense charts
-- Category-based expense breakdown with a donut chart
-- Add and delete income or expense transactions
-- Search, filter, and paginate transactions by type and category
-- Category budgets with spending progress, remaining amounts, and exceeded or
-  warning status
-- Update budget limits for expense categories
-- Mark transactions as recurring and process scheduled recurring entries
-- Export transactions as CSV
-- MongoDB persistence with a local JSON/in-memory fallback when MongoDB is
-  unavailable
+## ✨ Features Implemented
 
-## Technology
+### 1. 📊 Executive Financial Dashboard
+- **Key Metrics**: Lifetime Net Worth, Monthly Inflows, Monthly Outflows, and Net Savings Rate with dynamic threshold badges.
+- **Cash Flow Analytics**: Interactive Month-over-Month Cash Flow chart powered by Recharts.
+- **Category Expense Distribution**: Donut breakdown with real-time percentage shares.
 
-- **Frontend:** React 19, Vite, Recharts, and Lucide React
-- **Backend:** Node.js and Express
-- **Database:** MongoDB with Mongoose
-- **Fallback storage:** JSON seed files loaded into memory
+### 2. 🧾 Ledger & Receipt / Invoice Attachment
+- Searchable and filterable ledger (by category, type, date, or keywords).
+- **Receipt & Invoice Upload**: Attach bill/receipt images or PDFs directly to any transaction.
+- **Receipt Inspector Modal**: Preview and download receipts from within the ledger.
 
-## Project Structure
+### 3. 🎯 Financial Goals & Savings Vaults ("Piggy Banks")
+- Create targeted savings vaults (*Emergency Fund*, *New Tech Setup*, *Travel*, *Health*).
+- Track funding percentage, target date, days remaining, and required monthly pace.
+- Interactive **Deposit** and **Withdraw** modal with full contribution history.
 
-```text
-client/                 React/Vite frontend
-  src/App.jsx           Dashboard UI and API integration
-  src/index.css         Application styling
-server/                 Express backend
-  index.js              API routes and storage initialization
-  models/               Mongoose schemas
-  data/                 Default categories and transactions
+### 4. 📅 Recurring Bill & Subscription Calendar
+- 31-Day visual billing calendar highlighting upcoming due dates for active subscriptions (Rent, Fiber, Gym, Streaming, Cloud tools).
+- Monthly subscription burden calculation.
+- **1-Click "Mark as Paid"**: Automatically logs the expense entry directly into your ledger.
+
+### 5. 🔮 Net Worth Growth & Compound Interest Simulator
+- Sliders for Initial Principal, Monthly SIP, Expected Annual Return (presets for FD 7%, Nifty 12%, Midcap 15%), and Time Horizon (up to 30 years).
+- **Inflation Adjustment**: Calculates real purchasing power using 6% inflation drag.
+- Compounding trajectory area chart and year-by-year schedule breakdown.
+
+### 6. 📄 Official Monthly Statement (PDF) & Bank Statement CSV Engine
+- **Printable Account Statement**: Generates a clean, bank-grade monthly statement with `@media print` styling for 1-click "Save as PDF".
+- **Bank Statement CSV Import**: Drag-and-drop your bank/UPI CSV statement to parse and bulk-import into the ledger.
+- **Filtered CSV Export**: Export your entire transaction history.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Frontend:** React 19, Vite, Recharts, Lucide React
+- **Backend:** Node.js, Express
+- **Database:** MongoDB with Mongoose (with automated local fallback mode)
+- **Styling:** Custom modern tactile design system
+
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Prerequisites
+- Node.js (v18+)
+- (Optional) MongoDB running locally on `mongodb://127.0.0.1:27017` *(Runs seamlessly in local offline mode if MongoDB is not connected)*.
+
+### 2. Start Both Servers
+On Windows, double-click:
+```powershell
+start-finpulse.bat
 ```
 
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18 or newer
-- npm
-- MongoDB running locally at `mongodb://127.0.0.1:27017`, or a MongoDB
-  connection string supplied through `MONGODB_URI`
-
-### Start the backend
-
-```bash
+Or manually:
+```powershell
+# Terminal 1: Backend
 cd server
 npm install
 npm start
-```
 
-The API runs at `http://localhost:5000`. When MongoDB is available, the
-backend seeds the database with the JSON data if the collections are empty.
-
-### Start the frontend
-
-In a second terminal:
-
-```bash
+# Terminal 2: Frontend
 cd client
 npm install
 npm run dev
 ```
 
-The Vite development server runs at `http://localhost:3000` and proxies `/api`
-requests to the backend.
+* **Frontend UI:** `http://localhost:3000`
+* **Backend API:** `http://localhost:5000`
 
-### Run without MongoDB
+---
 
-The backend automatically falls back to local in-memory JSON mode if MongoDB
-cannot be reached. To explicitly skip the MongoDB connection attempt:
+## 🍃 MongoDB Features & Architecture
 
-```bash
-cd server
-SKIP_MONGODB=true npm start
-```
-
-On Windows PowerShell, use:
-
-```powershell
-$env:SKIP_MONGODB="true"; npm start
-```
-
-Changes made in fallback mode are held in memory and are lost when the server
-stops.
-
-## Backend API
-
-The Express server exposes these main endpoints:
-
-- `GET /api/categories` — list categories
-- `PUT /api/categories/:id` — update category details or budget limit
-- `GET /api/budgets?month=YYYY-MM` — calculate budget usage
-- `PUT /api/budgets/:categoryId` — update an expense-category budget
-- `GET /api/transactions` — list, filter, search, and paginate transactions
-- `POST /api/transactions` — create a transaction
-- `DELETE /api/transactions/:id` — delete a transaction
-- `GET /api/reports/summary?month=YYYY-MM` — calculate monthly and lifetime
-  financial metrics
-- `GET /api/reports/by-category?month=YYYY-MM` — summarize expenses by category
-- `GET /api/reports/monthly-trend?year=YYYY` — return monthly cash-flow data
-- `GET /api/reports/export` — download transactions as CSV
-- `POST /api/recurring/process` — create due recurring transactions
-
-## MongoDB Implementation
-
-- `server/models/Category.js` defines categories and monthly budget limits.
-- `server/models/Transaction.js` defines income and expense records.
-- Transactions use the compound index
-  `{ date: -1, type: 1, categoryId: 1 }` for chronological and category
-  queries.
-- Aggregation pipelines calculate category totals, monthly trends, budget
-  spending, and report summaries.
-- `$facet` retrieves paginated transaction items and the total count in one
-  database request.
-
-## Seed Data
-
-Default data is stored in:
-
-- `server/data/categories.json` — income and expense categories with budget
-  limits
-- `server/data/transactions.json` — example income, expenses, and recurring
-  transactions
+1. **Mongoose Schemas & Models**:
+   - `server/models/Category.js`: Category definitions and monthly budget limits.
+   - `server/models/Transaction.js`: Transaction records with compound indexing.
+   - `server/models/Goal.js`: Targeted savings vaults with deposit/withdraw ledger.
+   - `server/models/Subscription.js`: Recurring billing calendar tracking.
+2. **Compound Indexing**:
+   - `{ date: -1, type: 1, categoryId: 1 }` for high-speed chronological range and category filtering.
+3. **MongoDB Aggregation Pipelines**:
+   - `$match` + `$group` + `$sum`: Real-time category expense summarization.
+   - `$substr` + `$group`: Month-over-month trend analytics.
+   - `$facet`: Single-roundtrip execution of paginated items (`$skip`, `$limit`) and total record counting (`$count`).

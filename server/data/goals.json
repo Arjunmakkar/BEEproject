@@ -1,0 +1,90 @@
+[
+  {
+    "id": "goal-1",
+    "title": "Emergency Reserve (6 Months)",
+    "targetAmount": 180000,
+    "savedAmount": 125000,
+    "targetDate": "2027-04-30",
+    "category": "Emergency",
+    "color": "#10B981",
+    "icon": "ShieldCheck",
+    "note": "High liquidity buffer parked in overnight and liquid mutual funds.",
+    "history": [
+      {
+        "id": "gh-1",
+        "date": "2026-10-01",
+        "type": "deposit",
+        "amount": 25000,
+        "note": "Monthly savings allocation"
+      },
+      {
+        "id": "gh-2",
+        "date": "2026-11-01",
+        "type": "deposit",
+        "amount": 20000,
+        "note": "Bonus salary allocation"
+      }
+    ]
+  },
+  {
+    "id": "goal-2",
+    "title": "M3 Max MacBook Pro & Studio Desk",
+    "targetAmount": 220000,
+    "savedAmount": 140000,
+    "targetDate": "2027-02-28",
+    "category": "Tech",
+    "color": "#06B6D4",
+    "icon": "Laptop",
+    "note": "Hardware and ergonomic productivity workstation upgrade.",
+    "history": [
+      {
+        "id": "gh-3",
+        "date": "2026-10-15",
+        "type": "deposit",
+        "amount": 35000,
+        "note": "Freelance code review payout"
+      }
+    ]
+  },
+  {
+    "id": "goal-3",
+    "title": "Japan Spring Cherry Blossom Trip",
+    "targetAmount": 160000,
+    "savedAmount": 75000,
+    "targetDate": "2027-03-25",
+    "category": "Travel",
+    "color": "#F59E0B",
+    "icon": "Plane",
+    "note": "Flights, Shinkansen rail pass, ryokan stays, and Tokyo dining.",
+    "history": [
+      {
+        "id": "gh-4",
+        "date": "2026-10-20",
+        "type": "deposit",
+        "amount": 15000,
+        "note": "Quarterly dividend reinvestment"
+      }
+    ]
+  },
+  {
+    "id": "goal-4",
+    "title": "Parents Medical & Health Buffer",
+    "targetAmount": 100000,
+    "savedAmount": 60000,
+    "targetDate": "2027-12-31",
+    "category": "Health",
+    "color": "#F43F5E",
+    "icon": "HeartPulse",
+    "note": "Dedicated emergency medical reserve over corporate health insurance.",
+    "history": [
+      {
+        "id": "gh-5",
+        "date": "2026-11-05",
+        "type": "deposit",
+        "amount": 10000,
+        "note": "Monthly wellness allocation"
+      }
+    ]
+  }
+]
+

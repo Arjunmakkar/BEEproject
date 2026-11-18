@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';
 
 import { Category } from './models/Category.js';
 import { Transaction } from './models/Transaction.js';
+import { Goal } from './models/Goal.js';
+import { Subscription } from './models/Subscription.js';
 
 dotenv.config();
 
@@ -19,12 +21,15 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finpulse';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // In-memory fallback state for standalone offline operation
 let isMongoConnected = false;
 let memCategories = [];
 let memTransactions = [];
+let memGoals = [];
+let memSubscriptions = [];
 
 async function loadLocalData() {
   try {
@@ -32,7 +37,22 @@ async function loadLocalData() {
     memCategories = JSON.parse(rawCategories);
     const rawTransactions = await fs.readFile(path.join(__dirname, 'data', 'transactions.json'), 'utf-8');
     memTransactions = JSON.parse(rawTransactions);
-    console.log(`[Local Mode] Loaded ${memCategories.length} categories and ${memTransactions.length} transactions from JSON.`);
+
+    try {
+      const rawGoals = await fs.readFile(path.join(__dirname, 'data', 'goals.json'), 'utf-8');
+      memGoals = JSON.parse(rawGoals);
+    } catch {
+      memGoals = [];
+    }
+
+    try {
+      const rawSubs = await fs.readFile(path.join(__dirname, 'data', 'subscriptions.json'), 'utf-8');
+      memSubscriptions = JSON.parse(rawSubs);
+    } catch {
+      memSubscriptions = [];
+    }
+
+    console.log(`[Local Mode] Loaded ${memCategories.length} categories, ${memTransactions.length} transactions, ${memGoals.length} goals, and ${memSubscriptions.length} subscriptions.`);
   } catch (err) {
     console.error('Failed to load local fallback data:', err.message);
   }
@@ -43,7 +63,7 @@ async function initStorage() {
   await loadLocalData();
 
   if (process.env.SKIP_MONGODB === 'true') {
-    console.log('[FinPulse] SKIP_MONGODB is true. Running purely in local JSON mode.');
+    console.log('[FinPulse] SKIP_MONGODB is true. Running purely in local high-performance engine.');
     return;
   }
 
@@ -55,22 +75,36 @@ async function initStorage() {
     isMongoConnected = true;
     console.log(`[MongoDB] Connected successfully to ${MONGODB_URI}`);
 
-    // Seed Categories from JSON if empty
+    // Seed Categories
     const catCount = await Category.countDocuments();
     if (catCount === 0 && memCategories.length > 0) {
       await Category.insertMany(memCategories);
       console.log(`[MongoDB] Seeded ${memCategories.length} default categories into MongoDB.`);
     }
 
-    // Seed Transactions from JSON if empty
+    // Seed Transactions
     const txCount = await Transaction.countDocuments();
     if (txCount === 0 && memTransactions.length > 0) {
       await Transaction.insertMany(memTransactions);
       console.log(`[MongoDB] Seeded ${memTransactions.length} initial transactions into MongoDB.`);
     }
+
+    // Seed Goals
+    const goalCount = await Goal.countDocuments();
+    if (goalCount === 0 && memGoals.length > 0) {
+      await Goal.insertMany(memGoals);
+      console.log(`[MongoDB] Seeded ${memGoals.length} initial goals into MongoDB.`);
+    }
+
+    // Seed Subscriptions
+    const subCount = await Subscription.countDocuments();
+    if (subCount === 0 && memSubscriptions.length > 0) {
+      await Subscription.insertMany(memSubscriptions);
+      console.log(`[MongoDB] Seeded ${memSubscriptions.length} initial subscriptions into MongoDB.`);
+    }
   } catch (err) {
     isMongoConnected = false;
-    console.log(`[MongoDB] Notice: MongoDB not connected (${err.message}). FinPulse is running seamlessly in local JSON mode.`);
+    console.log(`[MongoDB] Notice: MongoDB not connected (${err.message}). FinPulse is running seamlessly in local mode.`);
   }
 }
 
@@ -211,7 +245,7 @@ app.put('/api/budgets/:categoryId', async (req, res) => {
 });
 
 // ==========================================
-// 3. Transactions CRUD & Paginated Query
+// 3. Transactions CRUD, Paginated Query & Bulk Import
 // ==========================================
 app.get('/api/transactions', async (req, res) => {
   try {
@@ -296,7 +330,7 @@ app.get('/api/transactions', async (req, res) => {
 
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { type, amount, categoryId, categoryName, date, paymentMode, note, isRecurring, recurrence } = req.body;
+    const { type, amount, categoryId, categoryName, date, paymentMode, note, isRecurring, recurrence, receiptUrl, receiptName } = req.body;
     if (!type || !amount || (!categoryId && !categoryName)) {
       return res.status(400).json({ error: 'Missing required transaction fields' });
     }
@@ -304,7 +338,7 @@ app.post('/api/transactions', async (req, res) => {
     const matchedCat = memCategories.find((c) => c.id === categoryId || c.name === categoryName);
 
     const newTxData = {
-      id: `tx-${Date.now()}`,
+      id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       type,
       amount: Number(amount),
       categoryId: matchedCat ? matchedCat.id : (categoryId || 'cat-custom'),
@@ -314,6 +348,8 @@ app.post('/api/transactions', async (req, res) => {
       note: note || '',
       isRecurring: Boolean(isRecurring),
       recurrence: recurrence || (isRecurring ? 'monthly' : 'none'),
+      receiptUrl: receiptUrl || null,
+      receiptName: receiptName || null,
     };
 
     if (isMongoConnected) {
@@ -326,6 +362,50 @@ app.post('/api/transactions', async (req, res) => {
     res.status(201).json(newTxData);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create transaction' });
+  }
+});
+
+// Bulk Insert for Bank Statement CSV Import
+app.post('/api/transactions/bulk', async (req, res) => {
+  try {
+    const { transactions } = req.body;
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({ error: 'No transactions provided' });
+    }
+
+    const prepared = transactions.map((t, idx) => {
+      const matchedCat = memCategories.find((c) => c.id === t.categoryId || c.name === t.categoryName);
+      return {
+        id: `tx-import-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+        type: t.type === 'income' ? 'income' : 'expense',
+        amount: Math.abs(Number(t.amount) || 0),
+        categoryId: matchedCat ? matchedCat.id : (t.categoryId || 'cat-other'),
+        categoryName: matchedCat ? matchedCat.name : (t.categoryName || 'Other'),
+        date: t.date || new Date().toISOString().slice(0, 10),
+        paymentMode: t.paymentMode || 'Net Banking',
+        note: t.note || 'Imported statement record',
+        isRecurring: Boolean(t.isRecurring),
+        recurrence: 'none',
+        receiptUrl: null,
+        receiptName: null,
+      };
+    });
+
+    if (isMongoConnected) {
+      await Transaction.insertMany(prepared);
+    } else {
+      memTransactions.unshift(...prepared);
+      // Keep sorted
+      memTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    res.status(201).json({
+      message: `Successfully imported ${prepared.length} transactions from bank statement.`,
+      count: prepared.length,
+      inserted: prepared,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to import bulk transactions' });
   }
 });
 
@@ -349,7 +429,332 @@ app.delete('/api/transactions/:id', async (req, res) => {
 });
 
 // ==========================================
-// 4. Reports & Summaries
+// 4. Financial Goals & Savings Vault API
+// ==========================================
+app.get('/api/goals', async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const goals = await Goal.find().sort({ createdAt: -1 }).lean();
+      return res.json(goals);
+    }
+    res.json(memGoals);
+  } catch (err) {
+    res.json(memGoals);
+  }
+});
+
+app.post('/api/goals', async (req, res) => {
+  try {
+    const { title, targetAmount, savedAmount, targetDate, category, color, icon, note } = req.body;
+    if (!title || !targetAmount || !targetDate) {
+      return res.status(400).json({ error: 'Missing required goal fields (title, targetAmount, targetDate)' });
+    }
+
+    const newGoalData = {
+      id: `goal-${Date.now()}`,
+      title,
+      targetAmount: Number(targetAmount),
+      savedAmount: Number(savedAmount || 0),
+      targetDate,
+      category: category || 'General',
+      color: color || '#10B981',
+      icon: icon || 'PiggyBank',
+      note: note || '',
+      history: savedAmount > 0 ? [
+        {
+          id: `gh-${Date.now()}`,
+          date: new Date().toISOString().slice(0, 10),
+          type: 'deposit',
+          amount: Number(savedAmount),
+          note: 'Initial deposit',
+        }
+      ] : [],
+    };
+
+    if (isMongoConnected) {
+      const g = new Goal(newGoalData);
+      await g.save();
+      return res.status(201).json(g);
+    }
+
+    memGoals.unshift(newGoalData);
+    res.status(201).json(newGoalData);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create goal' });
+  }
+});
+
+app.put('/api/goals/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, targetAmount, targetDate, category, color, icon, note } = req.body;
+
+    if (isMongoConnected) {
+      const updated = await Goal.findOneAndUpdate(
+        { id },
+        {
+          ...(title && { title }),
+          ...(targetAmount && { targetAmount: Number(targetAmount) }),
+          ...(targetDate && { targetDate }),
+          ...(category && { category }),
+          ...(color && { color }),
+          ...(icon && { icon }),
+          ...(note !== undefined && { note }),
+        },
+        { new: true }
+      );
+      if (updated) return res.json(updated);
+    }
+
+    const goal = memGoals.find((g) => g.id === id);
+    if (!goal) return res.status(404).json({ error: 'Goal not found' });
+    if (title) goal.title = title;
+    if (targetAmount) goal.targetAmount = Number(targetAmount);
+    if (targetDate) goal.targetDate = targetDate;
+    if (category) goal.category = category;
+    if (color) goal.color = color;
+    if (icon) goal.icon = icon;
+    if (note !== undefined) goal.note = note;
+
+    res.json(goal);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update goal' });
+  }
+});
+
+// Deposit / Withdraw to/from Goal Vault
+app.post('/api/goals/:id/deposit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, type = 'deposit', note = '' } = req.body;
+    const numAmt = Number(amount);
+
+    if (!numAmt || numAmt <= 0) {
+      return res.status(400).json({ error: 'Invalid deposit/withdrawal amount' });
+    }
+
+    const delta = type === 'withdraw' ? -numAmt : numAmt;
+
+    if (isMongoConnected) {
+      const goal = await Goal.findOne({ id });
+      if (!goal) return res.status(404).json({ error: 'Goal not found' });
+
+      goal.savedAmount = Math.max(0, goal.savedAmount + delta);
+      goal.history.unshift({
+        id: `gh-${Date.now()}`,
+        date: new Date().toISOString().slice(0, 10),
+        type,
+        amount: numAmt,
+        note: note || (type === 'deposit' ? 'Vault Contribution' : 'Vault Withdrawal'),
+      });
+
+      await goal.save();
+      return res.json(goal);
+    }
+
+    const goal = memGoals.find((g) => g.id === id);
+    if (!goal) return res.status(404).json({ error: 'Goal not found' });
+
+    goal.savedAmount = Math.max(0, (goal.savedAmount || 0) + delta);
+    if (!goal.history) goal.history = [];
+    goal.history.unshift({
+      id: `gh-${Date.now()}`,
+      date: new Date().toISOString().slice(0, 10),
+      type,
+      amount: numAmt,
+      note: note || (type === 'deposit' ? 'Vault Contribution' : 'Vault Withdrawal'),
+    });
+
+    res.json(goal);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process vault deposit' });
+  }
+});
+
+app.delete('/api/goals/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isMongoConnected) {
+      const deleted = await Goal.findOneAndDelete({ id });
+      if (!deleted) return res.status(404).json({ error: 'Goal not found' });
+      return res.json({ message: 'Goal removed successfully', id });
+    }
+
+    const idx = memGoals.findIndex((g) => g.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Goal not found' });
+    memGoals.splice(idx, 1);
+    res.json({ message: 'Goal removed successfully', id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete goal' });
+  }
+});
+
+// ==========================================
+// 5. Bills & Subscriptions API
+// ==========================================
+app.get('/api/subscriptions', async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const subs = await Subscription.find().sort({ dueDay: 1 }).lean();
+      return res.json(subs);
+    }
+    const sorted = [...memSubscriptions].sort((a, b) => a.dueDay - b.dueDay);
+    res.json(sorted);
+  } catch (err) {
+    res.json(memSubscriptions);
+  }
+});
+
+app.post('/api/subscriptions', async (req, res) => {
+  try {
+    const { name, amount, billingCycle, dueDay, category, color, icon, autoPay, reminderDays } = req.body;
+    if (!name || !amount || !dueDay) {
+      return res.status(400).json({ error: 'Missing required subscription fields' });
+    }
+
+    const newSubData = {
+      id: `sub-${Date.now()}`,
+      name,
+      amount: Number(amount),
+      billingCycle: billingCycle || 'monthly',
+      dueDay: Math.min(31, Math.max(1, Number(dueDay))),
+      category: category || 'General',
+      color: color || '#6366F1',
+      icon: icon || 'CreditCard',
+      autoPay: Boolean(autoPay !== false),
+      active: true,
+      paidMonths: [],
+      reminderDays: Number(reminderDays || 3),
+    };
+
+    if (isMongoConnected) {
+      const s = new Subscription(newSubData);
+      await s.save();
+      return res.status(201).json(s);
+    }
+
+    memSubscriptions.push(newSubData);
+    res.status(201).json(newSubData);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create subscription' });
+  }
+});
+
+app.put('/api/subscriptions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, amount, billingCycle, dueDay, category, color, icon, autoPay, active, reminderDays } = req.body;
+
+    if (isMongoConnected) {
+      const updated = await Subscription.findOneAndUpdate(
+        { id },
+        {
+          ...(name && { name }),
+          ...(amount && { amount: Number(amount) }),
+          ...(billingCycle && { billingCycle }),
+          ...(dueDay && { dueDay: Number(dueDay) }),
+          ...(category && { category }),
+          ...(color && { color }),
+          ...(icon && { icon }),
+          ...(autoPay !== undefined && { autoPay: Boolean(autoPay) }),
+          ...(active !== undefined && { active: Boolean(active) }),
+          ...(reminderDays !== undefined && { reminderDays: Number(reminderDays) }),
+        },
+        { new: true }
+      );
+      if (updated) return res.json(updated);
+    }
+
+    const sub = memSubscriptions.find((s) => s.id === id);
+    if (!sub) return res.status(404).json({ error: 'Subscription not found' });
+    if (name) sub.name = name;
+    if (amount) sub.amount = Number(amount);
+    if (billingCycle) sub.billingCycle = billingCycle;
+    if (dueDay) sub.dueDay = Number(dueDay);
+    if (category) sub.category = category;
+    if (color) sub.color = color;
+    if (icon) sub.icon = icon;
+    if (autoPay !== undefined) sub.autoPay = Boolean(autoPay);
+    if (active !== undefined) sub.active = Boolean(active);
+    if (reminderDays !== undefined) sub.reminderDays = Number(reminderDays);
+
+    res.json(sub);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update subscription' });
+  }
+});
+
+// Mark Bill as Paid for Month (and log transaction)
+app.post('/api/subscriptions/:id/pay', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const month = req.body.month || new Date().toISOString().slice(0, 7);
+    const today = new Date().toISOString().slice(0, 10);
+
+    let sub = null;
+    if (isMongoConnected) {
+      sub = await Subscription.findOne({ id });
+    } else {
+      sub = memSubscriptions.find((s) => s.id === id);
+    }
+
+    if (!sub) return res.status(404).json({ error: 'Subscription not found' });
+
+    if (!sub.paidMonths) sub.paidMonths = [];
+    if (!sub.paidMonths.includes(month)) {
+      sub.paidMonths.push(month);
+    }
+
+    // Auto-create ledger transaction
+    const matchedCat = memCategories.find((c) => c.name.toLowerCase().includes(sub.category.toLowerCase()) || c.id === 'cat-utilities') || memCategories[0];
+    const newTx = {
+      id: `tx-bill-${Date.now()}`,
+      type: 'expense',
+      amount: sub.amount,
+      categoryId: matchedCat ? matchedCat.id : 'cat-utilities',
+      categoryName: sub.name,
+      date: today,
+      paymentMode: 'Auto-Debit',
+      note: `Bill Paid: ${sub.name} (${month})`,
+      isRecurring: true,
+      recurrence: sub.billingCycle,
+      receiptUrl: null,
+      receiptName: null,
+    };
+
+    if (isMongoConnected) {
+      await sub.save();
+      await Transaction.create(newTx);
+    } else {
+      memTransactions.unshift(newTx);
+    }
+
+    res.json({ message: `Marked ${sub.name} as paid for ${month}`, subscription: sub, transaction: newTx });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process bill payment' });
+  }
+});
+
+app.delete('/api/subscriptions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isMongoConnected) {
+      const deleted = await Subscription.findOneAndDelete({ id });
+      if (!deleted) return res.status(404).json({ error: 'Subscription not found' });
+      return res.json({ message: 'Subscription removed', id });
+    }
+
+    const idx = memSubscriptions.findIndex((s) => s.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Subscription not found' });
+    memSubscriptions.splice(idx, 1);
+    res.json({ message: 'Subscription removed', id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete subscription' });
+  }
+});
+
+// ==========================================
+// 6. Reports, Summaries & Analytics
 // ==========================================
 app.get('/api/reports/summary', async (req, res) => {
   try {
@@ -574,14 +979,26 @@ app.get('/api/reports/monthly-trend', async (req, res) => {
   }
 });
 
-// CSV Export
+// CSV Export (with date filter)
 app.get('/api/reports/export', async (req, res) => {
   try {
+    const { from, to, type } = req.query;
     let list = [];
     if (isMongoConnected) {
-      list = await Transaction.find().sort({ date: -1 }).lean();
+      const query = {};
+      if (from || to) {
+        query.date = {};
+        if (from) query.date.$gte = from;
+        if (to) query.date.$lte = to;
+      }
+      if (type && type !== 'all') query.type = type;
+      list = await Transaction.find(query).sort({ date: -1 }).lean();
     } else {
-      list = [...memTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+      list = [...memTransactions];
+      if (from) list = list.filter((t) => t.date >= from);
+      if (to) list = list.filter((t) => t.date <= to);
+      if (type && type !== 'all') list = list.filter((t) => t.type === type);
+      list.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
     const headers = ['Transaction ID', 'Date', 'Type', 'Category', 'Amount', 'Payment Mode', 'Recurring', 'Notes'];
@@ -598,7 +1015,7 @@ app.get('/api/reports/export', async (req, res) => {
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="transactions_report.csv"');
+    res.setHeader('Content-Disposition', 'attachment; filename="finpulse_statement.csv"');
     res.status(200).send(csvContent);
   } catch (err) {
     res.status(500).json({ error: 'Failed to export CSV' });
@@ -646,6 +1063,8 @@ app.post('/api/recurring/process', async (req, res) => {
           note: searchNote,
           isRecurring: true,
           recurrence: t.recurrence || 'monthly',
+          receiptUrl: null,
+          receiptName: null,
         };
 
         if (isMongoConnected) {

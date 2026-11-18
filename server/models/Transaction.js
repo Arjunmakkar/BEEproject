@@ -12,6 +12,8 @@ const TransactionSchema = new mongoose.Schema(
     note: { type: String, default: '' },
     isRecurring: { type: Boolean, default: false },
     recurrence: { type: String, default: 'none' },
+    receiptUrl: { type: String, default: null },
+    receiptName: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -20,4 +22,3 @@ const TransactionSchema = new mongoose.Schema(
 TransactionSchema.index({ date: -1, type: 1, categoryId: 1 });
 
 export const Transaction = mongoose.model('Transaction', TransactionSchema);
-
