@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const CategorySchema = new mongoose.Schema(
   {
-    id: { type: String, required: true, unique: true },
+    id: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     name: { type: String, required: true },
     type: { type: String, enum: ['expense', 'income'], default: 'expense' },
     icon: { type: String, default: 'Tag' },
@@ -12,5 +13,6 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Category = mongoose.model('Category', CategorySchema);
+CategorySchema.index({ userId: 1, id: 1 }, { unique: true });
 
+export const Category = mongoose.model('Category', CategorySchema);

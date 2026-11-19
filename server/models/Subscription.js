@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const SubscriptionSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true },
     name: { type: String, required: true },
     amount: { type: Number, required: true },
     billingCycle: { type: String, enum: ['monthly', 'yearly'], default: 'monthly' },
@@ -19,4 +20,3 @@ const SubscriptionSchema = new mongoose.Schema(
 );
 
 export const Subscription = mongoose.model('Subscription', SubscriptionSchema);
-

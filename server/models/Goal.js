@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const GoalSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true },
     title: { type: String, required: true },
     targetAmount: { type: Number, required: true },
     savedAmount: { type: Number, default: 0 },
@@ -25,4 +26,3 @@ const GoalSchema = new mongoose.Schema(
 );
 
 export const Goal = mongoose.model('Goal', GoalSchema);
-

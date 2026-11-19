@@ -38,7 +38,11 @@ import {
   Eye,
   Clock,
   ArrowRight,
-  Info
+  Lock,
+  Mail,
+  User,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -57,6 +61,24 @@ import {
 } from 'recharts';
 
 export default function App() {
+  // Authentication State
+  const [token, setToken] = useState(() => localStorage.getItem('finpulse_token') || null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const u = localStorage.getItem('finpulse_user');
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Auth Form State
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  // App Navigation & Selected Month
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedMonth, setSelectedMonth] = useState('2026-11');
   const [toast, setToast] = useState(null);
@@ -101,14 +123,10 @@ export default function App() {
     receiptName: null,
   });
 
-  // Receipt Inspector Modal
   const [inspectReceipt, setInspectReceipt] = useState(null);
-
-  // Budget Limit Modal
   const [isEditBudgetOpen, setIsEditBudgetOpen] = useState(false);
   const [budgetForm, setBudgetForm] = useState({ categoryId: '', name: '', limit: 0 });
 
-  // Goals Modal
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [goalForm, setGoalForm] = useState({
     title: '',
@@ -121,10 +139,8 @@ export default function App() {
     note: '',
   });
 
-  // Goal Deposit Modal
   const [depositModal, setDepositModal] = useState({ open: false, goal: null, amount: '', type: 'deposit', note: '' });
 
-  // Subscription Modal
   const [isAddSubOpen, setIsAddSubOpen] = useState(false);
   const [subForm, setSubForm] = useState({
     name: '',
@@ -138,7 +154,6 @@ export default function App() {
     reminderDays: 3,
   });
 
-  // Statement & CSV Import Modal
   const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
   const [csvImportData, setCsvImportData] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
@@ -153,6 +168,140 @@ export default function App() {
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // Currency symbols
+  const currencySymbol = useMemo(() => {
+    switch (currentUser?.currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR':
+      default: return '₹';
+    }
+  }, [currentUser?.currency]);
+
+  const formatMoney = useCallback((val) => {
+    const num = Number(val) || 0;
+    return `${currencySymbol}${num.toLocaleString('en-IN')}`;
+  }, [currencySymbol]);
+
+  // Auth fetch wrapper
+  const authFetch = useCallback(async (url, options = {}) => {
+    if (!token) return { ok: false, status: 401 };
+    const headers = {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+    };
+    try {
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401) {
+        // Token expired
+        localStorage.removeItem('finpulse_token');
+        localStorage.removeItem('finpulse_user');
+        setToken(null);
+        setCurrentUser(null);
+      }
+      return res;
+    } catch (e) {
+      return { ok: false, status: 500 };
+    }
+  }, [token]);
+
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem('finpulse_token');
+    localStorage.removeItem('finpulse_user');
+    setToken(null);
+    setCurrentUser(null);
+    showToast('Signed out successfully');
+  };
+
+  // Handle Auth Login / Register
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+
+    if (authMode === 'register' && authForm.password !== authForm.confirmPassword) {
+      setAuthError('Passwords do not match');
+      setAuthLoading(false);
+      return;
+    }
+
+    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const payload = authMode === 'login'
+      ? { email: authForm.email, password: authForm.password }
+      : { name: authForm.name, email: authForm.email, password: authForm.password };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('finpulse_token', data.token);
+        localStorage.setItem('finpulse_user', JSON.stringify(data.user));
+        setToken(data.token);
+        setCurrentUser(data.user);
+        showToast(authMode === 'login' ? `Welcome back, ${data.user.name}!` : 'Account created! Welcome to FinPulse.');
+      } else {
+        setAuthError(data.error || 'Authentication failed');
+      }
+    } catch {
+      setAuthError('Network error. Please make sure backend is reachable.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // 1-Click Fast Demo Login
+  const handleDemoLogin = async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'demo@finpulse.app', password: 'password123' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('finpulse_token', data.token);
+        localStorage.setItem('finpulse_user', JSON.stringify(data.user));
+        setToken(data.token);
+        setCurrentUser(data.user);
+        showToast('Logged in as Demo User with full sample ledger!');
+      } else {
+        setAuthError(data.error || 'Demo login failed');
+      }
+    } catch {
+      setAuthError('Network error connecting to backend.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Change Preferred Currency
+  const handleCurrencyChange = async (newCurr) => {
+    try {
+      const res = await authFetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currency: newCurr }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setCurrentUser(updated);
+        localStorage.setItem('finpulse_user', JSON.stringify(updated));
+        showToast(`Currency updated to ${newCurr}`);
+      }
+    } catch {
+      showToast('Failed to update currency');
+    }
   };
 
   // Icon mapping
@@ -175,69 +324,69 @@ export default function App() {
   };
 
   // Data Loaders
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
-      const res = await fetch('/api/categories');
+      const res = await authFetch('/api/categories');
       if (res.ok) setCategories(await res.json());
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [authFetch]);
 
   const loadSummary = useCallback(async () => {
     try {
-      const res = await fetch(`/api/reports/summary?month=${selectedMonth}`);
+      const res = await authFetch(`/api/reports/summary?month=${selectedMonth}`);
       if (res.ok) setSummary(await res.json());
     } catch (e) {
       console.error(e);
     }
-  }, [selectedMonth]);
+  }, [authFetch, selectedMonth]);
 
   const loadCategoryReport = useCallback(async () => {
     try {
-      const res = await fetch(`/api/reports/by-category?month=${selectedMonth}`);
+      const res = await authFetch(`/api/reports/by-category?month=${selectedMonth}`);
       if (res.ok) setCategoryReport(await res.json());
     } catch (e) {
       console.error(e);
     }
-  }, [selectedMonth]);
+  }, [authFetch, selectedMonth]);
 
   const loadMonthlyTrends = useCallback(async () => {
     try {
       const year = selectedMonth.split('-')[0] || '2026';
-      const res = await fetch(`/api/reports/monthly-trend?year=${year}`);
+      const res = await authFetch(`/api/reports/monthly-trend?year=${year}`);
       if (res.ok) setMonthlyTrends(await res.json());
     } catch (e) {
       console.error(e);
     }
-  }, [selectedMonth]);
+  }, [authFetch, selectedMonth]);
 
   const loadBudgets = useCallback(async () => {
     try {
-      const res = await fetch(`/api/budgets?month=${selectedMonth}`);
+      const res = await authFetch(`/api/budgets?month=${selectedMonth}`);
       if (res.ok) setBudgets(await res.json());
     } catch (e) {
       console.error(e);
     }
-  }, [selectedMonth]);
+  }, [authFetch, selectedMonth]);
 
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     try {
-      const res = await fetch('/api/goals');
+      const res = await authFetch('/api/goals');
       if (res.ok) setGoals(await res.json());
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [authFetch]);
 
-  const loadSubscriptions = async () => {
+  const loadSubscriptions = useCallback(async () => {
     try {
-      const res = await fetch('/api/subscriptions');
+      const res = await authFetch('/api/subscriptions');
       if (res.ok) setSubscriptions(await res.json());
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [authFetch]);
 
   const loadTransactions = useCallback(async (page = 1) => {
     setLoading(true);
@@ -249,7 +398,7 @@ export default function App() {
         ...(categoryFilter !== 'all' && { category: categoryFilter }),
         ...(search && { search }),
       });
-      const res = await fetch(`/api/transactions?${params.toString()}`);
+      const res = await authFetch(`/api/transactions?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
@@ -260,28 +409,32 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, categoryFilter, search]);
+  }, [authFetch, typeFilter, categoryFilter, search]);
 
   useEffect(() => {
-    loadCategories();
-    loadGoals();
-    loadSubscriptions();
-  }, []);
+    if (token) {
+      loadCategories();
+      loadGoals();
+      loadSubscriptions();
+    }
+  }, [token, loadCategories, loadGoals, loadSubscriptions]);
 
   useEffect(() => {
-    loadSummary();
-    loadCategoryReport();
-    loadMonthlyTrends();
-    loadBudgets();
-  }, [selectedMonth, loadSummary, loadCategoryReport, loadMonthlyTrends, loadBudgets]);
+    if (token) {
+      loadSummary();
+      loadCategoryReport();
+      loadMonthlyTrends();
+      loadBudgets();
+    }
+  }, [token, selectedMonth, loadSummary, loadCategoryReport, loadMonthlyTrends, loadBudgets]);
 
   useEffect(() => {
-    if (activeTab === 'transactions' || activeTab === 'dashboard') {
+    if (token && (activeTab === 'transactions' || activeTab === 'dashboard')) {
       loadTransactions(1);
     }
-  }, [activeTab, loadTransactions]);
+  }, [token, activeTab, loadTransactions]);
 
-  // Handle Receipt File Upload (Client-side base64 conversion)
+  // Handle Receipt File Upload
   const handleReceiptFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -319,14 +472,14 @@ export default function App() {
     };
 
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await authFetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        showToast('Transaction logged in ledger!', 'success');
+        showToast('Transaction logged in your personal ledger!', 'success');
         setIsAddTxOpen(false);
         setTxForm({
           type: 'expense',
@@ -359,7 +512,7 @@ export default function App() {
   const handleDeleteTransaction = async (id) => {
     if (!window.confirm('Delete this ledger record?')) return;
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         showToast('Transaction deleted', 'success');
         loadSummary();
@@ -377,7 +530,7 @@ export default function App() {
   const handleUpdateBudgetSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/budgets/${budgetForm.categoryId}`, {
+      const res = await authFetch(`/api/budgets/${budgetForm.categoryId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ budgetLimit: Number(budgetForm.limit) }),
@@ -402,7 +555,7 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('/api/goals', {
+      const res = await authFetch('/api/goals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(goalForm),
@@ -434,7 +587,7 @@ export default function App() {
     if (!depositModal.goal || !depositModal.amount) return;
 
     try {
-      const res = await fetch(`/api/goals/${depositModal.goal.id}/deposit`, {
+      const res = await authFetch(`/api/goals/${depositModal.goal.id}/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -458,7 +611,7 @@ export default function App() {
   const handleDeleteGoal = async (id) => {
     if (!window.confirm('Delete this savings vault?')) return;
     try {
-      const res = await fetch(`/api/goals/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/goals/${id}`, { method: 'DELETE' });
       if (res.ok) {
         showToast('Goal removed', 'success');
         loadGoals();
@@ -472,7 +625,7 @@ export default function App() {
   const handleCreateSubSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/subscriptions', {
+      const res = await authFetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subForm),
@@ -502,7 +655,7 @@ export default function App() {
   // Mark Subscription Paid
   const handlePaySubscription = async (sub) => {
     try {
-      const res = await fetch(`/api/subscriptions/${sub.id}/pay`, {
+      const res = await authFetch(`/api/subscriptions/${sub.id}/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month: selectedMonth }),
@@ -524,7 +677,7 @@ export default function App() {
   const handleDeleteSubscription = async (id) => {
     if (!window.confirm('Stop tracking this subscription?')) return;
     try {
-      const res = await fetch(`/api/subscriptions/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/subscriptions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         showToast('Subscription removed', 'success');
         loadSubscriptions();
@@ -553,8 +706,6 @@ export default function App() {
       const parsed = [];
 
       for (const row of rows) {
-        // Match comma-separated values respecting quotes
-        const match = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
         const parts = row.split(',').map((p) => p.trim().replace(/^"|"$/g, ''));
         if (parts.length >= 3) {
           const date = parts[0] || parts[1];
@@ -586,7 +737,7 @@ export default function App() {
   const handleConfirmCsvImport = async () => {
     if (csvImportData.length === 0) return;
     try {
-      const res = await fetch('/api/transactions/bulk', {
+      const res = await authFetch('/api/transactions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactions: csvImportData }),
@@ -611,7 +762,7 @@ export default function App() {
   // Run Recurring Simulation
   const handleProcessRecurring = async () => {
     try {
-      const res = await fetch('/api/recurring/process', { method: 'POST' });
+      const res = await authFetch('/api/recurring/process', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         showToast(data.message, 'success');
@@ -626,9 +777,24 @@ export default function App() {
     }
   };
 
-  // Export CSV
-  const handleExportCSV = () => {
-    window.open('/api/reports/export', '_blank');
+  // Export CSV with Authorization
+  const handleExportCSV = async () => {
+    try {
+      const res = await authFetch('/api/reports/export');
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'finpulse_statement.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Statement CSV exported');
+      }
+    } catch {
+      showToast('Failed to export CSV');
+    }
   };
 
   // Compound Interest Calculation Engine
@@ -637,7 +803,6 @@ export default function App() {
     const pmt = Number(simMonthly) || 0;
     const r = (Number(simRate) || 0) / 100;
     const effRate = adjustInflation ? Math.max(0, r - 0.06) : r;
-    const n = 12;
     const years = Math.max(1, Math.min(40, Number(simYears) || 10));
 
     let currentBalance = p;
@@ -645,13 +810,11 @@ export default function App() {
     const schedule = [];
 
     for (let y = 1; y <= years; y++) {
-      let yearInterest = 0;
       for (let m = 1; m <= 12; m++) {
         currentBalance += pmt;
         totalInvested += pmt;
         const interest = currentBalance * (effRate / 12);
         currentBalance += interest;
-        yearInterest += interest;
       }
 
       schedule.push({
@@ -677,6 +840,165 @@ export default function App() {
     return sum + (s.active ? (s.billingCycle === 'yearly' ? s.amount / 12 : s.amount) : 0);
   }, 0);
 
+  // =========================================================
+  // AUTH VIEW (LOGIN / REGISTRATION)
+  // =========================================================
+  if (!token || !currentUser) {
+    return (
+      <>
+        <div className="bg-subtle-grid" />
+        <div className="auth-wrapper">
+          <div className="auth-card">
+            <div className="auth-header">
+              <div className="auth-logo-box">
+                <Sparkles size={24} />
+              </div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700 }}>
+                FinPulse
+              </h1>
+              <p style={{ fontSize: '0.825rem', color: '#94a3b8' }}>
+                Your personal, private, and intelligent financial operating system.
+              </p>
+            </div>
+
+            {/* Quick Demo Access Bar */}
+            <div className="demo-login-box">
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981' }}>Want a quick test drive?</div>
+                <div style={{ fontSize: '0.725rem', color: '#94a3b8' }}>Instant demo account with pre-filled mock data</div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleDemoLogin}
+                disabled={authLoading}
+              >
+                1-Click Demo &rarr;
+              </button>
+            </div>
+
+            {/* Auth Switcher Tabs */}
+            <div className="auth-tabs">
+              <button
+                type="button"
+                className={`auth-tab-btn ${authMode === 'login' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('login'); setAuthError(''); }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('register'); setAuthError(''); }}
+              >
+                Create Account
+              </button>
+            </div>
+
+            {authError && (
+              <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#fda4af', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={15} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
+              {authMode === 'register' && (
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Arjun Makkar"
+                      className="form-input"
+                      style={{ paddingLeft: '2.1rem', width: '100%' }}
+                      value={authForm.name}
+                      onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <input
+                    type="email"
+                    required
+                    placeholder="name@example.com"
+                    className="form-input"
+                    style={{ paddingLeft: '2.1rem', width: '100%' }}
+                    value={authForm.email}
+                    onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="At least 6 characters"
+                    className="form-input"
+                    style={{ paddingLeft: '2.1rem', width: '100%' }}
+                    value={authForm.password}
+                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {authMode === 'register' && (
+                <div className="form-group">
+                  <label className="form-label">Confirm Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      placeholder="Repeat password"
+                      className="form-input"
+                      style={{ paddingLeft: '2.1rem', width: '100%' }}
+                      value={authForm.confirmPassword}
+                      onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', marginTop: '0.4rem', padding: '0.65rem' }}
+                disabled={authLoading}
+              >
+                {authLoading ? 'Authenticating...' : authMode === 'login' ? 'Sign In to FinPulse' : 'Create My Personal Vault'}
+              </button>
+            </form>
+
+            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
+              Protected by isolated per-user tenancy & zero telemetry.
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // =========================================================
+  // AUTHENTICATED APPLICATION
+  // =========================================================
+  const initials = currentUser?.name
+    ? currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
+
   return (
     <>
       <div className="bg-subtle-grid" />
@@ -685,7 +1007,7 @@ export default function App() {
         <header className="navbar">
           <div className="brand">
             <div className="brand-icon">
-              <Sparkles size={20} />
+              <Sparkles size={18} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -749,6 +1071,38 @@ export default function App() {
                 onChange={(e) => setSelectedMonth(e.target.value)}
               />
             </div>
+
+            {/* Currency Switcher */}
+            <select
+              className="select-filter"
+              style={{ padding: '0.35rem 0.55rem', fontSize: '0.8rem' }}
+              value={currentUser?.currency || 'INR'}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              title="Change Account Currency"
+            >
+              <option value="INR">₹ INR</option>
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+              <option value="GBP">£ GBP</option>
+            </select>
+
+            {/* User Profile Pill & Logout */}
+            <div className="user-profile-menu">
+              <div className="user-avatar">{initials}</div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.785rem', fontWeight: 600, lineHeight: 1.2 }}>{currentUser?.name}</span>
+                <span style={{ fontSize: '0.675rem', color: '#94a3b8', lineHeight: 1.1 }}>{currentUser?.email}</span>
+              </div>
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '0.2rem 0.45rem', marginLeft: '0.25rem' }}
+                onClick={handleLogout}
+                title="Sign Out"
+              >
+                <LogOut size={12} />
+              </button>
+            </div>
+
             <button className="btn btn-primary" onClick={() => setIsAddTxOpen(true)}>
               <Plus size={15} /> Add Entry
             </button>
@@ -765,10 +1119,10 @@ export default function App() {
               </div>
             </div>
             <div className="metric-value">
-              ₹{summary.lifetimeBalance?.toLocaleString('en-IN') || 0}
+              {formatMoney(summary.lifetimeBalance)}
             </div>
             <div className="metric-sub">
-              Total cumulative financial balance
+              Your cumulative financial balance
             </div>
           </div>
 
@@ -780,7 +1134,7 @@ export default function App() {
               </div>
             </div>
             <div className="metric-value" style={{ color: '#10b981' }}>
-              +₹{summary.totalIncome?.toLocaleString('en-IN') || 0}
+              +{formatMoney(summary.totalIncome)}
             </div>
             <div className="metric-sub">
               Earned in {selectedMonth}
@@ -795,10 +1149,10 @@ export default function App() {
               </div>
             </div>
             <div className="metric-value" style={{ color: '#f43f5e' }}>
-              -₹{summary.totalExpense?.toLocaleString('en-IN') || 0}
+              -{formatMoney(summary.totalExpense)}
             </div>
             <div className="metric-sub">
-              Across {summary.transactionCount || 0} items
+              Across {summary.transactionCount || 0} personal records
             </div>
           </div>
 
@@ -810,7 +1164,7 @@ export default function App() {
               </div>
             </div>
             <div className="metric-value">
-              ₹{summary.netSavings?.toLocaleString('en-IN') || 0}
+              {formatMoney(summary.netSavings)}
             </div>
             <div className="metric-sub">
               <span className={`badge-tag ${summary.savingsRate >= 20 ? 'badge-emerald' : 'badge-amber'}`}>
@@ -848,7 +1202,7 @@ export default function App() {
                     <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
                       <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => `₹${v/1000}k`} />
+                      <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: '#131722',
@@ -856,7 +1210,7 @@ export default function App() {
                           borderRadius: '8px',
                           color: '#f8fafc',
                         }}
-                        formatter={(val) => [`₹${val.toLocaleString('en-IN')}`, '']}
+                        formatter={(val) => [formatMoney(val), '']}
                       />
                       <Legend wrapperStyle={{ paddingTop: 8 }} />
                       <Bar dataKey="income" name="Income" fill="#10b981" radius={[3, 3, 0, 0]} />
@@ -905,7 +1259,7 @@ export default function App() {
                               borderRadius: '8px',
                               color: '#fff',
                             }}
-                            formatter={(val) => [`₹${val.toLocaleString('en-IN')}`, 'Spent']}
+                            formatter={(val) => [formatMoney(val), 'Spent']}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -921,7 +1275,7 @@ export default function App() {
                                 {c.categoryName}
                               </span>
                               <span style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
-                                ₹{c.total?.toLocaleString('en-IN')} ({c.percentage}%)
+                                {formatMoney(c.total)} ({c.percentage}%)
                               </span>
                             </div>
                             <div className="progress-track" style={{ height: '5px' }}>
@@ -951,24 +1305,30 @@ export default function App() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {goals.slice(0, 3).map((g) => {
-                    const pct = Math.min(100, Math.round((g.savedAmount / g.targetAmount) * 100));
-                    return (
-                      <div key={g.id} style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem 0.95rem', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
-                          <span style={{ fontWeight: 600 }}>{g.title}</span>
-                          <span style={{ color: '#10b981', fontFamily: 'var(--font-mono)' }}>{pct}%</span>
+                  {goals.length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '1rem 0', textAlign: 'center' }}>
+                      No active vaults yet. Click to create your first savings goal!
+                    </div>
+                  ) : (
+                    goals.slice(0, 3).map((g) => {
+                      const pct = Math.min(100, Math.round((g.savedAmount / g.targetAmount) * 100));
+                      return (
+                        <div key={g.id} style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem 0.95rem', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 600 }}>{g.title}</span>
+                            <span style={{ color: '#10b981', fontFamily: 'var(--font-mono)' }}>{pct}%</span>
+                          </div>
+                          <div className="progress-track" style={{ height: '6px', marginBottom: '0.4rem' }}>
+                            <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || '#10b981' }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <span>Saved: {formatMoney(g.savedAmount)}</span>
+                            <span>Target: {formatMoney(g.targetAmount)}</span>
+                          </div>
                         </div>
-                        <div className="progress-track" style={{ height: '6px', marginBottom: '0.4rem' }}>
-                          <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || '#10b981' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
-                          <span>Saved: ₹{g.savedAmount?.toLocaleString('en-IN')}</span>
-                          <span>Target: ₹{g.targetAmount?.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -985,33 +1345,39 @@ export default function App() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-                  {subscriptions.slice(0, 3).map((s) => {
-                    const isPaid = s.paidMonths?.includes(selectedMonth);
-                    return (
-                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0e111a', border: '1px solid #21283b', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <span style={{ background: '#1c2233', width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
-                            {renderIcon(s.icon, 14)}
-                          </span>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{s.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Due on Day {s.dueDay} of month</div>
+                  {subscriptions.length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '1rem 0', textAlign: 'center' }}>
+                      No tracked subscriptions. Add a recurring bill to see it here!
+                    </div>
+                  ) : (
+                    subscriptions.slice(0, 3).map((s) => {
+                      const isPaid = s.paidMonths?.includes(selectedMonth);
+                      return (
+                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0e111a', border: '1px solid #21283b', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span style={{ background: '#1c2233', width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
+                              {renderIcon(s.icon, 14)}
+                            </span>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{s.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Due on Day {s.dueDay} of month</div>
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>{formatMoney(s.amount)}</div>
+                            {isPaid ? (
+                              <span className="badge-tag badge-emerald" style={{ fontSize: '0.685rem' }}>Paid</span>
+                            ) : (
+                              <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', marginTop: '0.15rem' }} onClick={() => handlePaySubscription(s)}>
+                                Pay Now
+                              </button>
+                            )}
                           </div>
                         </div>
-
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>₹{s.amount?.toLocaleString('en-IN')}</div>
-                          {isPaid ? (
-                            <span className="badge-tag badge-emerald" style={{ fontSize: '0.685rem' }}>Paid</span>
-                          ) : (
-                            <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', marginTop: '0.15rem' }} onClick={() => handlePaySubscription(s)}>
-                              Pay Now
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -1078,7 +1444,7 @@ export default function App() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <span className={t.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                            {t.type === 'income' ? '+' : '-'}₹{t.amount?.toLocaleString('en-IN')}
+                            {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                           </span>
                         </td>
                         <td style={{ textAlign: 'center' }}>
@@ -1108,7 +1474,7 @@ export default function App() {
             <div className="panel-header">
               <div className="panel-title">
                 <CreditCard size={17} style={{ color: '#6366f1' }} />
-                Ledger Entries & Receipts
+                Personal Financial Ledger
               </div>
               <div className="panel-actions">
                 <button className="btn btn-secondary btn-sm" onClick={() => setIsStatementModalOpen(true)}>
@@ -1174,7 +1540,7 @@ export default function App() {
                   ) : transactions.length === 0 ? (
                     <tr>
                       <td colSpan="8" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
-                        No transactions match your search filter.
+                        No transactions recorded. Click "Add Entry" to log your first transaction!
                       </td>
                     </tr>
                   ) : (
@@ -1213,7 +1579,7 @@ export default function App() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <span className={t.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                            {t.type === 'income' ? '+' : '-'}₹{t.amount?.toLocaleString('en-IN')}
+                            {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                           </span>
                         </td>
                         <td style={{ textAlign: 'center' }}>
@@ -1305,7 +1671,7 @@ export default function App() {
                           </span>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{b.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cap: ₹{b.budgetLimit?.toLocaleString('en-IN') || 'None'}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cap: {b.budgetLimit > 0 ? formatMoney(b.budgetLimit) : 'None'}</div>
                           </div>
                         </div>
 
@@ -1318,7 +1684,7 @@ export default function App() {
 
                       <div style={{ margin: '0.85rem 0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem', marginBottom: '0.3rem' }}>
-                          <span style={{ color: '#94a3b8' }}>Spent: ₹{b.spent?.toLocaleString('en-IN')}</span>
+                          <span style={{ color: '#94a3b8' }}>Spent: {formatMoney(b.spent)}</span>
                           <span style={{ fontWeight: 600, color: isOver ? '#f43f5e' : '#f8fafc' }}>{b.percentage}%</span>
                         </div>
                         <div className="progress-track" style={{ height: '8px' }}>
@@ -1335,9 +1701,9 @@ export default function App() {
                       <div style={{ fontSize: '0.775rem', color: '#94a3b8' }}>
                         {b.budgetLimit > 0 ? (
                           isOver ? (
-                            <span style={{ color: '#f43f5e' }}>Exceeded by ₹{(b.spent - b.budgetLimit).toLocaleString('en-IN')}</span>
+                            <span style={{ color: '#f43f5e' }}>Exceeded by {formatMoney(b.spent - b.budgetLimit)}</span>
                           ) : (
-                            <span style={{ color: '#10b981' }}>₹{b.remaining?.toLocaleString('en-IN')} remaining buffer</span>
+                            <span style={{ color: '#10b981' }}>{formatMoney(b.remaining)} remaining buffer</span>
                           )
                         ) : (
                           <span>No spending cap established</span>
@@ -1373,7 +1739,7 @@ export default function App() {
                 <div>
                   <div className="panel-title">
                     <Target size={17} style={{ color: '#10b981' }} />
-                    Savings Vaults & Targeted Piggy Banks
+                    Personal Savings Vaults & Targets
                   </div>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
                     Lock away savings for designated objectives. Track pace, projected timeline, and deposit/withdraw on demand.
@@ -1390,7 +1756,6 @@ export default function App() {
                 const pct = Math.min(100, Math.round(((g.savedAmount || 0) / g.targetAmount) * 100));
                 const remaining = Math.max(0, g.targetAmount - (g.savedAmount || 0));
 
-                // Days calculation
                 const targetD = new Date(g.targetDate);
                 const diffTime = targetD.getTime() - new Date().getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -1420,23 +1785,21 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Saved vs Target */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Saved Balance</div>
                           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 700, color: '#10b981' }}>
-                            ₹{g.savedAmount?.toLocaleString('en-IN')}
+                            {formatMoney(g.savedAmount)}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Target Cap</div>
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 600, color: '#f8fafc' }}>
-                            ₹{g.targetAmount?.toLocaleString('en-IN')}
+                            {formatMoney(g.targetAmount)}
                           </div>
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
                       <div className="progress-track" style={{ height: '9px', marginBottom: '0.65rem' }}>
                         <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || '#10b981' }} />
                       </div>
@@ -1444,7 +1807,7 @@ export default function App() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.785rem', color: '#94a3b8', marginBottom: '0.85rem' }}>
                         <span>{pct}% funded</span>
                         {remaining > 0 ? (
-                          <span>₹{monthlyPace?.toLocaleString('en-IN')}/mo needed</span>
+                          <span>{formatMoney(monthlyPace)}/mo needed</span>
                         ) : (
                           <span style={{ color: '#10b981', fontWeight: 600 }}>Goal Complete! 🎉</span>
                         )}
@@ -1500,7 +1863,7 @@ export default function App() {
                   <div style={{ textAlign: 'right', marginRight: '0.75rem' }}>
                     <div style={{ fontSize: '0.725rem', color: '#94a3b8' }}>Total Monthly Recurring Burden</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#f43f5e' }}>
-                      ₹{Math.round(totalMonthlySubCost).toLocaleString('en-IN')}/month
+                      {formatMoney(Math.round(totalMonthlySubCost))}/month
                     </div>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={() => setIsAddSubOpen(true)}>
@@ -1540,10 +1903,10 @@ export default function App() {
                                   color: isPaid ? '#10b981' : '#f59e0b',
                                   border: `1px solid ${isPaid ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
                                 }}
-                                title={`${s.name} - ₹${s.amount} (${isPaid ? 'Paid' : 'Upcoming'})`}
+                                title={`${s.name} - ${formatMoney(s.amount)} (${isPaid ? 'Paid' : 'Upcoming'})`}
                               >
                                 <span>{s.name}</span>
-                                <span style={{ fontFamily: 'var(--font-mono)' }}>₹{s.amount}</span>
+                                <span style={{ fontFamily: 'var(--font-mono)' }}>{formatMoney(s.amount)}</span>
                               </div>
                             );
                           })}
@@ -1555,7 +1918,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Subscriptions Table / List View */}
+            {/* Subscriptions Table */}
             <div className="panel-card">
               <div className="panel-header">
                 <div className="panel-title">
@@ -1602,7 +1965,7 @@ export default function App() {
                             )}
                           </td>
                           <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                            ₹{s.amount?.toLocaleString('en-IN')}
+                            {formatMoney(s.amount)}
                           </td>
                           <td>
                             {isPaid ? (
@@ -1664,7 +2027,7 @@ export default function App() {
                 <div className="sim-control-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
                     <span style={{ color: '#94a3b8' }}>Initial Principal</span>
-                    <strong style={{ fontFamily: 'var(--font-mono)' }}>₹{simInitial.toLocaleString('en-IN')}</strong>
+                    <strong style={{ fontFamily: 'var(--font-mono)' }}>{formatMoney(simInitial)}</strong>
                   </div>
                   <input
                     type="range"
@@ -1680,7 +2043,7 @@ export default function App() {
                 <div className="sim-control-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
                     <span style={{ color: '#94a3b8' }}>Monthly SIP Deposit</span>
-                    <strong style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>₹{simMonthly.toLocaleString('en-IN')}/mo</strong>
+                    <strong style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>{formatMoney(simMonthly)}/mo</strong>
                   </div>
                   <input
                     type="range"
@@ -1709,7 +2072,7 @@ export default function App() {
                   />
                   <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem' }}>
                     <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.35rem', fontSize: '0.7rem' }} onClick={() => setSimRate(7)}>FD (7%)</button>
-                    <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.35rem', fontSize: '0.7rem' }} onClick={() => setSimRate(12)}>Nifty 50 (12%)</button>
+                    <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.35rem', fontSize: '0.7rem' }} onClick={() => setSimRate(12)}>Nifty (12%)</button>
                     <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.35rem', fontSize: '0.7rem' }} onClick={() => setSimRate(15)}>Midcap (15%)</button>
                   </div>
                 </div>
@@ -1748,7 +2111,7 @@ export default function App() {
               <div className="panel-card" style={{ borderLeft: '4px solid #64748b' }}>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Principal Invested</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, margin: '0.25rem 0' }}>
-                  ₹{simResults.totalInvested?.toLocaleString('en-IN')}
+                  {formatMoney(simResults.totalInvested)}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Your hard-earned contributions</div>
               </div>
@@ -1756,7 +2119,7 @@ export default function App() {
               <div className="panel-card" style={{ borderLeft: '4px solid #10b981' }}>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Compound Wealth Gained</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, color: '#10b981', margin: '0.25rem 0' }}>
-                  +₹{simResults.wealthGain?.toLocaleString('en-IN')}
+                  +{formatMoney(simResults.wealthGain)}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Pure exponential interest returns</div>
               </div>
@@ -1764,7 +2127,7 @@ export default function App() {
               <div className="panel-card" style={{ borderLeft: '4px solid #06b6d4' }}>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Future Estimated Net Worth</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, color: '#06b6d4', margin: '0.25rem 0' }}>
-                  ₹{simResults.futureValue?.toLocaleString('en-IN')}
+                  {formatMoney(simResults.futureValue)}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Portfolio value after {simYears} years</div>
               </div>
@@ -1784,7 +2147,7 @@ export default function App() {
                   <AreaChart data={simResults.schedule} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
                     <XAxis dataKey="year" stroke="#64748b" tick={{ fill: '#94a3b8' }} />
-                    <YAxis stroke="#64748b" tick={{ fill: '#94a3b8' }} tickFormatter={(v) => `₹${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
+                    <YAxis stroke="#64748b" tick={{ fill: '#94a3b8' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#131722',
@@ -1792,7 +2155,7 @@ export default function App() {
                         borderRadius: '8px',
                         color: '#f8fafc',
                       }}
-                      formatter={(val) => [`₹${val.toLocaleString('en-IN')}`, '']}
+                      formatter={(val) => [formatMoney(val), '']}
                     />
                     <Legend wrapperStyle={{ paddingTop: 8 }} />
                     <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#06b6d4" fill="rgba(6, 182, 212, 0.15)" strokeWidth={2} />
@@ -1825,9 +2188,9 @@ export default function App() {
                     {simResults.schedule.map((row, idx) => (
                       <tr key={`sim-row-${idx}`}>
                         <td><strong>{row.year}</strong></td>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>₹{row.totalInvested.toLocaleString('en-IN')}</td>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>+₹{row.wealthGain.toLocaleString('en-IN')}</td>
-                        <td style={{ fontFamily: 'var(--font-mono)', textAlign: 'right', fontWeight: 600 }}>₹{row.futureValue.toLocaleString('en-IN')}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>{formatMoney(row.totalInvested)}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>+{formatMoney(row.wealthGain)}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', textAlign: 'right', fontWeight: 600 }}>{formatMoney(row.futureValue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1869,7 +2232,7 @@ export default function App() {
                     Bank Statement CSV Import
                   </div>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Import transaction statements from HDFC, SBI, ICICI, or payment apps into your FinPulse ledger.
+                    Import transaction statements from HDFC, SBI, ICICI, or payment apps into your personal FinPulse ledger.
                   </p>
                 </div>
                 {csvImportData.length > 0 && (
@@ -1919,7 +2282,7 @@ export default function App() {
                                 {row.type}
                               </span>
                             </td>
-                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>₹{row.amount?.toLocaleString('en-IN')}</td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{formatMoney(row.amount)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1982,7 +2345,7 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Amount (₹)</label>
+                    <label className="form-label">Amount ({currencySymbol})</label>
                     <input
                       type="number"
                       step="0.01"
@@ -2106,7 +2469,7 @@ export default function App() {
                 <div>
                   <div className="modal-title">Receipt: {inspectReceipt.note || inspectReceipt.categoryName}</div>
                   <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                    {inspectReceipt.date} • ₹{inspectReceipt.amount?.toLocaleString('en-IN')} ({inspectReceipt.paymentMode})
+                    {inspectReceipt.date} • {formatMoney(inspectReceipt.amount)} ({inspectReceipt.paymentMode})
                   </div>
                 </div>
                 <button className="modal-close" onClick={() => setInspectReceipt(null)}>
@@ -2147,7 +2510,9 @@ export default function App() {
               <div className="modal-header">
                 <div>
                   <div className="modal-title">Monthly Account Statement</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Statement Period: {selectedMonth}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    Account Holder: <strong>{currentUser?.name}</strong> ({currentUser?.email}) • Period: {selectedMonth}
+                  </div>
                 </div>
                 <button className="modal-close" onClick={() => setIsStatementModalOpen(false)}>
                   <X size={18} />
@@ -2155,7 +2520,6 @@ export default function App() {
               </div>
 
               <div className="modal-body" style={{ gap: '1.25rem' }}>
-                {/* Statement Bank-grade Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #21283b', paddingBottom: '1rem' }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800 }}>FinPulse Wealth Operating System</div>
@@ -2163,35 +2527,33 @@ export default function App() {
                   </div>
                   <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8' }}>
                     <div>Report Date: {new Date().toISOString().slice(0, 10)}</div>
-                    <div>Account Currency: INR (₹)</div>
+                    <div>Account Currency: {currentUser?.currency || 'INR'} ({currencySymbol})</div>
                   </div>
                 </div>
 
-                {/* Ledger Summary Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                   <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Inflows</div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#10b981', fontFamily: 'var(--font-mono)' }}>
-                      +₹{summary.totalIncome?.toLocaleString('en-IN')}
+                      +{formatMoney(summary.totalIncome)}
                     </div>
                   </div>
                   <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Outflows</div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f43f5e', fontFamily: 'var(--font-mono)' }}>
-                      -₹{summary.totalExpense?.toLocaleString('en-IN')}
+                      -{formatMoney(summary.totalExpense)}
                     </div>
                   </div>
                   <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Net Surplus / Savings</div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#06b6d4', fontFamily: 'var(--font-mono)' }}>
-                      ₹{summary.netSavings?.toLocaleString('en-IN')}
+                      {formatMoney(summary.netSavings)}
                     </div>
                   </div>
                 </div>
 
-                {/* Itemized Transactions Table */}
                 <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem', textTransform: 'uppercase' }}>Itemized Transactions</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem', textTransform: 'uppercase' }}>Itemized Ledger Entries</div>
                   <div className="table-wrapper" style={{ maxHeight: '280px', overflowY: 'auto' }}>
                     <table>
                       <thead>
@@ -2211,7 +2573,7 @@ export default function App() {
                             <td>{t.note || '—'}</td>
                             <td>{t.paymentMode}</td>
                             <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                              {t.type === 'income' ? '+' : '-'}₹{t.amount?.toLocaleString('en-IN')}
+                              {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
                             </td>
                           </tr>
                         ))}
@@ -2262,7 +2624,7 @@ export default function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div className="form-group">
-                      <label className="form-label">Target Amount (₹)</label>
+                      <label className="form-label">Target Amount ({currencySymbol})</label>
                       <input
                         type="number"
                         required
@@ -2274,7 +2636,7 @@ export default function App() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Initial Seed (₹)</label>
+                      <label className="form-label">Initial Seed ({currencySymbol})</label>
                       <input
                         type="number"
                         placeholder="e.g. 25000"
@@ -2377,7 +2739,7 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Amount (₹)</label>
+                    <label className="form-label">Amount ({currencySymbol})</label>
                     <input
                       type="number"
                       required
@@ -2442,7 +2804,7 @@ export default function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div className="form-group">
-                      <label className="form-label">Amount (₹)</label>
+                      <label className="form-label">Amount ({currencySymbol})</label>
                       <input
                         type="number"
                         required
@@ -2547,7 +2909,7 @@ export default function App() {
                   </p>
 
                   <div className="form-group">
-                    <label className="form-label">Monthly Limit (₹)</label>
+                    <label className="form-label">Monthly Limit ({currencySymbol})</label>
                     <input
                       type="number"
                       required

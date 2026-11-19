@@ -5,7 +5,10 @@ import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
+import { User } from './models/User.js';
 import { Category } from './models/Category.js';
 import { Transaction } from './models/Transaction.js';
 import { Goal } from './models/Goal.js';
@@ -19,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finpulse';
+const JWT_SECRET = process.env.JWT_SECRET || 'finpulse_jwt_secret_dev_key_89234823489';
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
@@ -26,33 +30,57 @@ app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // In-memory fallback state for standalone offline operation
 let isMongoConnected = false;
+let memUsers = [];
 let memCategories = [];
 let memTransactions = [];
 let memGoals = [];
 let memSubscriptions = [];
 
+// Base template categories cloned for every new registered user
+let templateCategories = [];
+
 async function loadLocalData() {
   try {
     const rawCategories = await fs.readFile(path.join(__dirname, 'data', 'categories.json'), 'utf-8');
-    memCategories = JSON.parse(rawCategories);
-    const rawTransactions = await fs.readFile(path.join(__dirname, 'data', 'transactions.json'), 'utf-8');
-    memTransactions = JSON.parse(rawTransactions);
+    templateCategories = JSON.parse(rawCategories);
 
+    const rawTransactions = await fs.readFile(path.join(__dirname, 'data', 'transactions.json'), 'utf-8');
+    const seedTransactions = JSON.parse(rawTransactions);
+
+    let seedGoals = [];
     try {
       const rawGoals = await fs.readFile(path.join(__dirname, 'data', 'goals.json'), 'utf-8');
-      memGoals = JSON.parse(rawGoals);
+      seedGoals = JSON.parse(rawGoals);
     } catch {
-      memGoals = [];
+      seedGoals = [];
     }
 
+    let seedSubs = [];
     try {
       const rawSubs = await fs.readFile(path.join(__dirname, 'data', 'subscriptions.json'), 'utf-8');
-      memSubscriptions = JSON.parse(rawSubs);
+      seedSubs = JSON.parse(rawSubs);
     } catch {
-      memSubscriptions = [];
+      seedSubs = [];
     }
 
-    console.log(`[Local Mode] Loaded ${memCategories.length} categories, ${memTransactions.length} transactions, ${memGoals.length} goals, and ${memSubscriptions.length} subscriptions.`);
+    // Seed Demo User
+    const demoPasswordHash = await bcrypt.hash('password123', 10);
+    const demoUser = {
+      id: 'usr_demo',
+      name: 'Demo Account',
+      email: 'demo@finpulse.app',
+      passwordHash: demoPasswordHash,
+      currency: 'INR',
+      createdAt: new Date().toISOString(),
+    };
+
+    memUsers = [demoUser];
+    memCategories = templateCategories.map((c) => ({ ...c, userId: 'usr_demo' }));
+    memTransactions = seedTransactions.map((t) => ({ ...t, userId: 'usr_demo' }));
+    memGoals = seedGoals.map((g) => ({ ...g, userId: 'usr_demo' }));
+    memSubscriptions = seedSubs.map((s) => ({ ...s, userId: 'usr_demo' }));
+
+    console.log(`[Local Mode] Seeded demo user with ${memCategories.length} categories, ${memTransactions.length} transactions, ${memGoals.length} goals, and ${memSubscriptions.length} subscriptions.`);
   } catch (err) {
     console.error('Failed to load local fallback data:', err.message);
   }
@@ -68,39 +96,21 @@ async function initStorage() {
   }
 
   try {
-    // Attempt MongoDB connection with 1.5 second timeout
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 1500,
     });
     isMongoConnected = true;
     console.log(`[MongoDB] Connected successfully to ${MONGODB_URI}`);
 
-    // Seed Categories
-    const catCount = await Category.countDocuments();
-    if (catCount === 0 && memCategories.length > 0) {
+    // Seed Demo User if empty
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      await User.insertMany(memUsers);
       await Category.insertMany(memCategories);
-      console.log(`[MongoDB] Seeded ${memCategories.length} default categories into MongoDB.`);
-    }
-
-    // Seed Transactions
-    const txCount = await Transaction.countDocuments();
-    if (txCount === 0 && memTransactions.length > 0) {
       await Transaction.insertMany(memTransactions);
-      console.log(`[MongoDB] Seeded ${memTransactions.length} initial transactions into MongoDB.`);
-    }
-
-    // Seed Goals
-    const goalCount = await Goal.countDocuments();
-    if (goalCount === 0 && memGoals.length > 0) {
       await Goal.insertMany(memGoals);
-      console.log(`[MongoDB] Seeded ${memGoals.length} initial goals into MongoDB.`);
-    }
-
-    // Seed Subscriptions
-    const subCount = await Subscription.countDocuments();
-    if (subCount === 0 && memSubscriptions.length > 0) {
       await Subscription.insertMany(memSubscriptions);
-      console.log(`[MongoDB] Seeded ${memSubscriptions.length} initial subscriptions into MongoDB.`);
+      console.log(`[MongoDB] Seeded demo account data.`);
     }
   } catch (err) {
     isMongoConnected = false;
@@ -108,29 +118,232 @@ async function initStorage() {
   }
 }
 
+// Helper: clone default categories for a new user
+async function seedCategoriesForNewUser(userId) {
+  const userCats = templateCategories.map((c) => ({
+    ...c,
+    userId,
+  }));
+
+  if (isMongoConnected) {
+    await Category.insertMany(userCats);
+  } else {
+    memCategories.push(...userCats);
+  }
+}
+
 // ==========================================
-// 1. Categories API
+// AUTH MIDDLEWARE
 // ==========================================
-app.get('/api/categories', async (req, res) => {
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+  }
+
+  const token = authHeader.split(' ')[1];
   try {
-    if (isMongoConnected) {
-      const categories = await Category.find().lean();
-      return res.json(categories);
-    }
-    res.json(memCategories);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    req.userId = decoded.userId;
+    next();
   } catch (err) {
-    res.json(memCategories);
+    return res.status(401).json({ error: 'Invalid or expired token. Please log in again.' });
+  }
+}
+
+// ==========================================
+// AUTH API (Register, Login, Me, Profile)
+// ==========================================
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Please provide name, email, and password' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check existing
+    if (isMongoConnected) {
+      const existing = await User.findOne({ email: normalizedEmail });
+      if (existing) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
+    } else {
+      const existing = memUsers.find((u) => u.email === normalizedEmail);
+      if (existing) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userId = `usr_${Date.now()}`;
+    const newUser = {
+      id: userId,
+      name: name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      currency: 'INR',
+      createdAt: new Date().toISOString(),
+    };
+
+    if (isMongoConnected) {
+      const u = new User(newUser);
+      await u.save();
+    } else {
+      memUsers.push(newUser);
+    }
+
+    // Seed personalized categories for the user
+    await seedCategoriesForNewUser(userId);
+
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, name: newUser.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'Account registered successfully',
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        currency: newUser.currency,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
-app.put('/api/categories/:id', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Please enter both email and password' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = null;
+
+    if (isMongoConnected) {
+      user = await User.findOne({ email: normalizedEmail }).lean();
+    } else {
+      user = memUsers.find((u) => u.email === normalizedEmail);
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Logged in successfully',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        currency: user.currency || 'INR',
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  try {
+    let user = null;
+    if (isMongoConnected) {
+      user = await User.findOne({ id: req.userId }, '-passwordHash').lean();
+    } else {
+      user = memUsers.find((u) => u.id === req.userId);
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      currency: user.currency || 'INR',
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve profile' });
+  }
+});
+
+app.put('/api/auth/profile', requireAuth, async (req, res) => {
+  try {
+    const { name, currency } = req.body;
+
+    if (isMongoConnected) {
+      const updated = await User.findOneAndUpdate(
+        { id: req.userId },
+        {
+          ...(name && { name }),
+          ...(currency && { currency }),
+        },
+        { new: true }
+      );
+      return res.json({ id: updated.id, name: updated.name, email: updated.email, currency: updated.currency });
+    }
+
+    const u = memUsers.find((user) => user.id === req.userId);
+    if (!u) return res.status(404).json({ error: 'User not found' });
+    if (name) u.name = name;
+    if (currency) u.currency = currency;
+
+    res.json({ id: u.id, name: u.name, email: u.email, currency: u.currency });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// ==========================================
+// 1. Categories API (Scoped to User)
+// ==========================================
+app.get('/api/categories', requireAuth, async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const categories = await Category.find({ userId: req.userId }).lean();
+      return res.json(categories);
+    }
+    const userCats = memCategories.filter((c) => c.userId === req.userId);
+    res.json(userCats);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+app.put('/api/categories/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, icon, color, budgetLimit } = req.body;
 
     if (isMongoConnected) {
       const updated = await Category.findOneAndUpdate(
-        { id },
+        { id, userId: req.userId },
         {
           ...(name !== undefined && { name }),
           ...(icon !== undefined && { icon }),
@@ -142,7 +355,7 @@ app.put('/api/categories/:id', async (req, res) => {
       if (updated) return res.json(updated);
     }
 
-    const index = memCategories.findIndex((c) => c.id === id);
+    const index = memCategories.findIndex((c) => c.id === id && c.userId === req.userId);
     if (index === -1) return res.status(404).json({ error: 'Category not found' });
     if (name !== undefined) memCategories[index].name = name;
     if (icon !== undefined) memCategories[index].icon = icon;
@@ -155,9 +368,9 @@ app.put('/api/categories/:id', async (req, res) => {
 });
 
 // ==========================================
-// 2. Budgets API (with aggregation)
+// 2. Budgets API (Scoped to User)
 // ==========================================
-app.get('/api/budgets', async (req, res) => {
+app.get('/api/budgets', requireAuth, async (req, res) => {
   try {
     const month = req.query.month || new Date().toISOString().slice(0, 7);
 
@@ -165,10 +378,11 @@ app.get('/api/budgets', async (req, res) => {
     let spendMap = {};
 
     if (isMongoConnected) {
-      categories = await Category.find({ type: 'expense' }).lean();
+      categories = await Category.find({ userId: req.userId, type: 'expense' }).lean();
       const categoryExpenses = await Transaction.aggregate([
         {
           $match: {
+            userId: req.userId,
             type: 'expense',
             date: { $regex: `^${month}` },
           },
@@ -184,9 +398,9 @@ app.get('/api/budgets', async (req, res) => {
         spendMap[item._id] = item.totalSpent;
       }
     } else {
-      categories = memCategories.filter((c) => c.type === 'expense');
+      categories = memCategories.filter((c) => c.userId === req.userId && c.type === 'expense');
       for (const t of memTransactions) {
-        if (t.type === 'expense' && t.date && t.date.startsWith(month)) {
+        if (t.userId === req.userId && t.type === 'expense' && t.date && t.date.startsWith(month)) {
           spendMap[t.categoryId] = (spendMap[t.categoryId] || 0) + Number(t.amount);
         }
       }
@@ -221,21 +435,21 @@ app.get('/api/budgets', async (req, res) => {
   }
 });
 
-app.put('/api/budgets/:categoryId', async (req, res) => {
+app.put('/api/budgets/:categoryId', requireAuth, async (req, res) => {
   try {
     const { categoryId } = req.params;
     const { budgetLimit } = req.body;
 
     if (isMongoConnected) {
       const updated = await Category.findOneAndUpdate(
-        { id: categoryId },
+        { id: categoryId, userId: req.userId },
         { budgetLimit: Number(budgetLimit || 0) },
         { new: true }
       );
       if (updated) return res.json(updated);
     }
 
-    const cat = memCategories.find((c) => c.id === categoryId);
+    const cat = memCategories.find((c) => c.id === categoryId && c.userId === req.userId);
     if (!cat) return res.status(404).json({ error: 'Category not found' });
     cat.budgetLimit = Number(budgetLimit || 0);
     res.json(cat);
@@ -245,16 +459,16 @@ app.put('/api/budgets/:categoryId', async (req, res) => {
 });
 
 // ==========================================
-// 3. Transactions CRUD, Paginated Query & Bulk Import
+// 3. Transactions CRUD & Bulk (Scoped to User)
 // ==========================================
-app.get('/api/transactions', async (req, res) => {
+app.get('/api/transactions', requireAuth, async (req, res) => {
   try {
     const { from, to, type, category, search, page = 1, limit = 15 } = req.query;
     const pageNum = Math.max(1, parseInt(page, 10));
     const pageSize = Math.max(1, parseInt(limit, 10));
 
     if (isMongoConnected) {
-      const query = {};
+      const query = { userId: req.userId };
       if (from || to) {
         query.date = {};
         if (from) query.date.$gte = from;
@@ -294,8 +508,8 @@ app.get('/api/transactions', async (req, res) => {
       });
     }
 
-    // Local in-memory filtering
-    let filtered = [...memTransactions];
+    // Local in-memory filtering for user
+    let filtered = memTransactions.filter((t) => t.userId === req.userId);
 
     if (from) filtered = filtered.filter((t) => t.date >= from);
     if (to) filtered = filtered.filter((t) => t.date <= to);
@@ -328,17 +542,19 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
-app.post('/api/transactions', async (req, res) => {
+app.post('/api/transactions', requireAuth, async (req, res) => {
   try {
     const { type, amount, categoryId, categoryName, date, paymentMode, note, isRecurring, recurrence, receiptUrl, receiptName } = req.body;
     if (!type || !amount || (!categoryId && !categoryName)) {
       return res.status(400).json({ error: 'Missing required transaction fields' });
     }
 
-    const matchedCat = memCategories.find((c) => c.id === categoryId || c.name === categoryName);
+    const userCats = memCategories.filter((c) => c.userId === req.userId);
+    const matchedCat = userCats.find((c) => c.id === categoryId || c.name === categoryName);
 
     const newTxData = {
       id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      userId: req.userId,
       type,
       amount: Number(amount),
       categoryId: matchedCat ? matchedCat.id : (categoryId || 'cat-custom'),
@@ -365,18 +581,20 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
-// Bulk Insert for Bank Statement CSV Import
-app.post('/api/transactions/bulk', async (req, res) => {
+app.post('/api/transactions/bulk', requireAuth, async (req, res) => {
   try {
     const { transactions } = req.body;
     if (!Array.isArray(transactions) || transactions.length === 0) {
       return res.status(400).json({ error: 'No transactions provided' });
     }
 
+    const userCats = memCategories.filter((c) => c.userId === req.userId);
+
     const prepared = transactions.map((t, idx) => {
-      const matchedCat = memCategories.find((c) => c.id === t.categoryId || c.name === t.categoryName);
+      const matchedCat = userCats.find((c) => c.id === t.categoryId || c.name === t.categoryName);
       return {
         id: `tx-import-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+        userId: req.userId,
         type: t.type === 'income' ? 'income' : 'expense',
         amount: Math.abs(Number(t.amount) || 0),
         categoryId: matchedCat ? matchedCat.id : (t.categoryId || 'cat-other'),
@@ -395,31 +613,30 @@ app.post('/api/transactions/bulk', async (req, res) => {
       await Transaction.insertMany(prepared);
     } else {
       memTransactions.unshift(...prepared);
-      // Keep sorted
       memTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
     res.status(201).json({
-      message: `Successfully imported ${prepared.length} transactions from bank statement.`,
+      message: `Successfully imported ${prepared.length} transactions into your personal ledger.`,
       count: prepared.length,
       inserted: prepared,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to import bulk transactions' });
+    res.status(500).json({ error: 'Failed to import transactions' });
   }
 });
 
-app.delete('/api/transactions/:id', async (req, res) => {
+app.delete('/api/transactions/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
     if (isMongoConnected) {
-      const deleted = await Transaction.findOneAndDelete({ id });
+      const deleted = await Transaction.findOneAndDelete({ id, userId: req.userId });
       if (!deleted) return res.status(404).json({ error: 'Transaction not found' });
       return res.json({ message: 'Transaction deleted successfully', id });
     }
 
-    const idx = memTransactions.findIndex((t) => t.id === id);
+    const idx = memTransactions.findIndex((t) => t.id === id && t.userId === req.userId);
     if (idx === -1) return res.status(404).json({ error: 'Transaction not found' });
     memTransactions.splice(idx, 1);
     res.json({ message: 'Transaction deleted successfully', id });
@@ -431,27 +648,29 @@ app.delete('/api/transactions/:id', async (req, res) => {
 // ==========================================
 // 4. Financial Goals & Savings Vault API
 // ==========================================
-app.get('/api/goals', async (req, res) => {
+app.get('/api/goals', requireAuth, async (req, res) => {
   try {
     if (isMongoConnected) {
-      const goals = await Goal.find().sort({ createdAt: -1 }).lean();
+      const goals = await Goal.find({ userId: req.userId }).sort({ createdAt: -1 }).lean();
       return res.json(goals);
     }
-    res.json(memGoals);
+    const userGoals = memGoals.filter((g) => g.userId === req.userId);
+    res.json(userGoals);
   } catch (err) {
-    res.json(memGoals);
+    res.status(500).json({ error: 'Failed to fetch goals' });
   }
 });
 
-app.post('/api/goals', async (req, res) => {
+app.post('/api/goals', requireAuth, async (req, res) => {
   try {
     const { title, targetAmount, savedAmount, targetDate, category, color, icon, note } = req.body;
     if (!title || !targetAmount || !targetDate) {
-      return res.status(400).json({ error: 'Missing required goal fields (title, targetAmount, targetDate)' });
+      return res.status(400).json({ error: 'Missing required goal fields' });
     }
 
     const newGoalData = {
       id: `goal-${Date.now()}`,
+      userId: req.userId,
       title,
       targetAmount: Number(targetAmount),
       savedAmount: Number(savedAmount || 0),
@@ -484,46 +703,7 @@ app.post('/api/goals', async (req, res) => {
   }
 });
 
-app.put('/api/goals/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, targetAmount, targetDate, category, color, icon, note } = req.body;
-
-    if (isMongoConnected) {
-      const updated = await Goal.findOneAndUpdate(
-        { id },
-        {
-          ...(title && { title }),
-          ...(targetAmount && { targetAmount: Number(targetAmount) }),
-          ...(targetDate && { targetDate }),
-          ...(category && { category }),
-          ...(color && { color }),
-          ...(icon && { icon }),
-          ...(note !== undefined && { note }),
-        },
-        { new: true }
-      );
-      if (updated) return res.json(updated);
-    }
-
-    const goal = memGoals.find((g) => g.id === id);
-    if (!goal) return res.status(404).json({ error: 'Goal not found' });
-    if (title) goal.title = title;
-    if (targetAmount) goal.targetAmount = Number(targetAmount);
-    if (targetDate) goal.targetDate = targetDate;
-    if (category) goal.category = category;
-    if (color) goal.color = color;
-    if (icon) goal.icon = icon;
-    if (note !== undefined) goal.note = note;
-
-    res.json(goal);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update goal' });
-  }
-});
-
-// Deposit / Withdraw to/from Goal Vault
-app.post('/api/goals/:id/deposit', async (req, res) => {
+app.post('/api/goals/:id/deposit', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { amount, type = 'deposit', note = '' } = req.body;
@@ -536,7 +716,7 @@ app.post('/api/goals/:id/deposit', async (req, res) => {
     const delta = type === 'withdraw' ? -numAmt : numAmt;
 
     if (isMongoConnected) {
-      const goal = await Goal.findOne({ id });
+      const goal = await Goal.findOne({ id, userId: req.userId });
       if (!goal) return res.status(404).json({ error: 'Goal not found' });
 
       goal.savedAmount = Math.max(0, goal.savedAmount + delta);
@@ -552,7 +732,7 @@ app.post('/api/goals/:id/deposit', async (req, res) => {
       return res.json(goal);
     }
 
-    const goal = memGoals.find((g) => g.id === id);
+    const goal = memGoals.find((g) => g.id === id && g.userId === req.userId);
     if (!goal) return res.status(404).json({ error: 'Goal not found' });
 
     goal.savedAmount = Math.max(0, (goal.savedAmount || 0) + delta);
@@ -567,20 +747,20 @@ app.post('/api/goals/:id/deposit', async (req, res) => {
 
     res.json(goal);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to process vault deposit' });
+    res.status(500).json({ error: 'Failed to deposit to vault' });
   }
 });
 
-app.delete('/api/goals/:id', async (req, res) => {
+app.delete('/api/goals/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
-      const deleted = await Goal.findOneAndDelete({ id });
+      const deleted = await Goal.findOneAndDelete({ id, userId: req.userId });
       if (!deleted) return res.status(404).json({ error: 'Goal not found' });
       return res.json({ message: 'Goal removed successfully', id });
     }
 
-    const idx = memGoals.findIndex((g) => g.id === id);
+    const idx = memGoals.findIndex((g) => g.id === id && g.userId === req.userId);
     if (idx === -1) return res.status(404).json({ error: 'Goal not found' });
     memGoals.splice(idx, 1);
     res.json({ message: 'Goal removed successfully', id });
@@ -590,22 +770,24 @@ app.delete('/api/goals/:id', async (req, res) => {
 });
 
 // ==========================================
-// 5. Bills & Subscriptions API
+// 5. Bills & Subscriptions API (Scoped to User)
 // ==========================================
-app.get('/api/subscriptions', async (req, res) => {
+app.get('/api/subscriptions', requireAuth, async (req, res) => {
   try {
     if (isMongoConnected) {
-      const subs = await Subscription.find().sort({ dueDay: 1 }).lean();
+      const subs = await Subscription.find({ userId: req.userId }).sort({ dueDay: 1 }).lean();
       return res.json(subs);
     }
-    const sorted = [...memSubscriptions].sort((a, b) => a.dueDay - b.dueDay);
-    res.json(sorted);
+    const userSubs = memSubscriptions
+      .filter((s) => s.userId === req.userId)
+      .sort((a, b) => a.dueDay - b.dueDay);
+    res.json(userSubs);
   } catch (err) {
-    res.json(memSubscriptions);
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
   }
 });
 
-app.post('/api/subscriptions', async (req, res) => {
+app.post('/api/subscriptions', requireAuth, async (req, res) => {
   try {
     const { name, amount, billingCycle, dueDay, category, color, icon, autoPay, reminderDays } = req.body;
     if (!name || !amount || !dueDay) {
@@ -614,6 +796,7 @@ app.post('/api/subscriptions', async (req, res) => {
 
     const newSubData = {
       id: `sub-${Date.now()}`,
+      userId: req.userId,
       name,
       amount: Number(amount),
       billingCycle: billingCycle || 'monthly',
@@ -640,52 +823,7 @@ app.post('/api/subscriptions', async (req, res) => {
   }
 });
 
-app.put('/api/subscriptions/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, amount, billingCycle, dueDay, category, color, icon, autoPay, active, reminderDays } = req.body;
-
-    if (isMongoConnected) {
-      const updated = await Subscription.findOneAndUpdate(
-        { id },
-        {
-          ...(name && { name }),
-          ...(amount && { amount: Number(amount) }),
-          ...(billingCycle && { billingCycle }),
-          ...(dueDay && { dueDay: Number(dueDay) }),
-          ...(category && { category }),
-          ...(color && { color }),
-          ...(icon && { icon }),
-          ...(autoPay !== undefined && { autoPay: Boolean(autoPay) }),
-          ...(active !== undefined && { active: Boolean(active) }),
-          ...(reminderDays !== undefined && { reminderDays: Number(reminderDays) }),
-        },
-        { new: true }
-      );
-      if (updated) return res.json(updated);
-    }
-
-    const sub = memSubscriptions.find((s) => s.id === id);
-    if (!sub) return res.status(404).json({ error: 'Subscription not found' });
-    if (name) sub.name = name;
-    if (amount) sub.amount = Number(amount);
-    if (billingCycle) sub.billingCycle = billingCycle;
-    if (dueDay) sub.dueDay = Number(dueDay);
-    if (category) sub.category = category;
-    if (color) sub.color = color;
-    if (icon) sub.icon = icon;
-    if (autoPay !== undefined) sub.autoPay = Boolean(autoPay);
-    if (active !== undefined) sub.active = Boolean(active);
-    if (reminderDays !== undefined) sub.reminderDays = Number(reminderDays);
-
-    res.json(sub);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update subscription' });
-  }
-});
-
-// Mark Bill as Paid for Month (and log transaction)
-app.post('/api/subscriptions/:id/pay', async (req, res) => {
+app.post('/api/subscriptions/:id/pay', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const month = req.body.month || new Date().toISOString().slice(0, 7);
@@ -693,9 +831,9 @@ app.post('/api/subscriptions/:id/pay', async (req, res) => {
 
     let sub = null;
     if (isMongoConnected) {
-      sub = await Subscription.findOne({ id });
+      sub = await Subscription.findOne({ id, userId: req.userId });
     } else {
-      sub = memSubscriptions.find((s) => s.id === id);
+      sub = memSubscriptions.find((s) => s.id === id && s.userId === req.userId);
     }
 
     if (!sub) return res.status(404).json({ error: 'Subscription not found' });
@@ -705,13 +843,12 @@ app.post('/api/subscriptions/:id/pay', async (req, res) => {
       sub.paidMonths.push(month);
     }
 
-    // Auto-create ledger transaction
-    const matchedCat = memCategories.find((c) => c.name.toLowerCase().includes(sub.category.toLowerCase()) || c.id === 'cat-utilities') || memCategories[0];
     const newTx = {
       id: `tx-bill-${Date.now()}`,
+      userId: req.userId,
       type: 'expense',
       amount: sub.amount,
-      categoryId: matchedCat ? matchedCat.id : 'cat-utilities',
+      categoryId: 'cat-utilities',
       categoryName: sub.name,
       date: today,
       paymentMode: 'Auto-Debit',
@@ -729,22 +866,22 @@ app.post('/api/subscriptions/:id/pay', async (req, res) => {
       memTransactions.unshift(newTx);
     }
 
-    res.json({ message: `Marked ${sub.name} as paid for ${month}`, subscription: sub, transaction: newTx });
+    res.json({ message: `Marked ${sub.name} as paid for ${month}`, subscription: sub });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process bill payment' });
   }
 });
 
-app.delete('/api/subscriptions/:id', async (req, res) => {
+app.delete('/api/subscriptions/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     if (isMongoConnected) {
-      const deleted = await Subscription.findOneAndDelete({ id });
+      const deleted = await Subscription.findOneAndDelete({ id, userId: req.userId });
       if (!deleted) return res.status(404).json({ error: 'Subscription not found' });
       return res.json({ message: 'Subscription removed', id });
     }
 
-    const idx = memSubscriptions.findIndex((s) => s.id === id);
+    const idx = memSubscriptions.findIndex((s) => s.id === id && s.userId === req.userId);
     if (idx === -1) return res.status(404).json({ error: 'Subscription not found' });
     memSubscriptions.splice(idx, 1);
     res.json({ message: 'Subscription removed', id });
@@ -754,15 +891,15 @@ app.delete('/api/subscriptions/:id', async (req, res) => {
 });
 
 // ==========================================
-// 6. Reports, Summaries & Analytics
+// 6. Reports & Analytics (Scoped to User)
 // ==========================================
-app.get('/api/reports/summary', async (req, res) => {
+app.get('/api/reports/summary', requireAuth, async (req, res) => {
   try {
     const month = req.query.month || new Date().toISOString().slice(0, 7);
 
     if (isMongoConnected) {
       const [currentMonthAgg] = (await Transaction.aggregate([
-        { $match: { date: { $regex: `^${month}` } } },
+        { $match: { userId: req.userId, date: { $regex: `^${month}` } } },
         {
           $group: {
             _id: null,
@@ -783,6 +920,7 @@ app.get('/api/reports/summary', async (req, res) => {
       const savingsRate = totalIncome > 0 ? Math.round((netSavings / totalIncome) * 100) : 0;
 
       const [lifetimeAgg] = (await Transaction.aggregate([
+        { $match: { userId: req.userId } },
         {
           $group: {
             _id: null,
@@ -805,14 +943,15 @@ app.get('/api/reports/summary', async (req, res) => {
       });
     }
 
-    // Local in-memory summary
+    // Local in-memory summary for user
+    const userTx = memTransactions.filter((t) => t.userId === req.userId);
     let totalIncome = 0;
     let totalExpense = 0;
     let txCount = 0;
     let lifeIncome = 0;
     let lifeExpense = 0;
 
-    for (const t of memTransactions) {
+    for (const t of userTx) {
       const amt = Number(t.amount || 0);
       if (t.type === 'income') lifeIncome += amt;
       if (t.type === 'expense') lifeExpense += amt;
@@ -843,13 +982,13 @@ app.get('/api/reports/summary', async (req, res) => {
 });
 
 // Category Breakdown Report
-app.get('/api/reports/by-category', async (req, res) => {
+app.get('/api/reports/by-category', requireAuth, async (req, res) => {
   try {
     const { from, to, month } = req.query;
 
     let aggResult = [];
     if (isMongoConnected) {
-      const matchQuery = { type: 'expense' };
+      const matchQuery = { userId: req.userId, type: 'expense' };
       if (month) {
         matchQuery.date = { $regex: `^${month}` };
       } else if (from || to) {
@@ -872,7 +1011,8 @@ app.get('/api/reports/by-category', async (req, res) => {
       ]);
     } else {
       const map = {};
-      for (const t of memTransactions) {
+      const userTx = memTransactions.filter((t) => t.userId === req.userId);
+      for (const t of userTx) {
         if (t.type !== 'expense') continue;
         if (month && (!t.date || !t.date.startsWith(month))) continue;
         if (from && t.date < from) continue;
@@ -892,8 +1032,9 @@ app.get('/api/reports/by-category', async (req, res) => {
       aggResult = Object.values(map).sort((a, b) => b.total - a.total);
     }
 
+    const userCats = memCategories.filter((c) => c.userId === req.userId);
     const catMap = {};
-    for (const c of memCategories) catMap[c.id] = c;
+    for (const c of userCats) catMap[c.id] = c;
 
     const totalExpense = aggResult.reduce((sum, item) => sum + item.total, 0);
 
@@ -923,7 +1064,7 @@ app.get('/api/reports/by-category', async (req, res) => {
 });
 
 // Monthly Trend Report (Month-over-month cashflow)
-app.get('/api/reports/monthly-trend', async (req, res) => {
+app.get('/api/reports/monthly-trend', requireAuth, async (req, res) => {
   try {
     const year = req.query.year || '2026';
     const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
@@ -933,7 +1074,7 @@ app.get('/api/reports/monthly-trend', async (req, res) => {
 
     if (isMongoConnected) {
       const monthlyAgg = await Transaction.aggregate([
-        { $match: { date: { $regex: `^${year}` } } },
+        { $match: { userId: req.userId, date: { $regex: `^${year}` } } },
         {
           $group: {
             _id: { $substr: ['$date', 5, 2] },
@@ -947,7 +1088,8 @@ app.get('/api/reports/monthly-trend', async (req, res) => {
         aggMap[m._id] = m;
       }
     } else {
-      for (const t of memTransactions) {
+      const userTx = memTransactions.filter((t) => t.userId === req.userId);
+      for (const t of userTx) {
         if (!t.date || !t.date.startsWith(year)) continue;
         const m = t.date.slice(5, 7);
         if (!aggMap[m]) {
@@ -979,13 +1121,13 @@ app.get('/api/reports/monthly-trend', async (req, res) => {
   }
 });
 
-// CSV Export (with date filter)
-app.get('/api/reports/export', async (req, res) => {
+// CSV Export
+app.get('/api/reports/export', requireAuth, async (req, res) => {
   try {
     const { from, to, type } = req.query;
     let list = [];
     if (isMongoConnected) {
-      const query = {};
+      const query = { userId: req.userId };
       if (from || to) {
         query.date = {};
         if (from) query.date.$gte = from;
@@ -994,7 +1136,7 @@ app.get('/api/reports/export', async (req, res) => {
       if (type && type !== 'all') query.type = type;
       list = await Transaction.find(query).sort({ date: -1 }).lean();
     } else {
-      list = [...memTransactions];
+      list = memTransactions.filter((t) => t.userId === req.userId);
       if (from) list = list.filter((t) => t.date >= from);
       if (to) list = list.filter((t) => t.date <= to);
       if (type && type !== 'all') list = list.filter((t) => t.type === type);
@@ -1023,16 +1165,16 @@ app.get('/api/reports/export', async (req, res) => {
 });
 
 // Recurring simulation
-app.post('/api/recurring/process', async (req, res) => {
+app.post('/api/recurring/process', requireAuth, async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
     const currentMonth = today.slice(0, 7);
 
     let recurringTemplates = [];
     if (isMongoConnected) {
-      recurringTemplates = await Transaction.find({ isRecurring: true }).lean();
+      recurringTemplates = await Transaction.find({ userId: req.userId, isRecurring: true }).lean();
     } else {
-      recurringTemplates = memTransactions.filter((t) => t.isRecurring);
+      recurringTemplates = memTransactions.filter((t) => t.userId === req.userId && t.isRecurring);
     }
 
     let createdCount = 0;
@@ -1042,18 +1184,20 @@ app.post('/api/recurring/process', async (req, res) => {
 
       if (isMongoConnected) {
         exists = await Transaction.findOne({
+          userId: req.userId,
           note: searchNote,
           date: { $regex: `^${currentMonth}` },
         });
       } else {
         exists = memTransactions.some(
-          (mt) => mt.note === searchNote && mt.date && mt.date.startsWith(currentMonth)
+          (mt) => mt.userId === req.userId && mt.note === searchNote && mt.date && mt.date.startsWith(currentMonth)
         );
       }
 
       if (!exists) {
         const newRecord = {
           id: `tx-rec-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          userId: req.userId,
           type: t.type,
           amount: t.amount,
           categoryId: t.categoryId,
@@ -1077,7 +1221,7 @@ app.post('/api/recurring/process', async (req, res) => {
     }
 
     res.json({
-      message: `Recurring job executed successfully. Created ${createdCount} automated transactions for ${currentMonth}.`,
+      message: `Recurring job executed. Created ${createdCount} automated transactions for ${currentMonth}.`,
       createdCount,
     });
   } catch (err) {

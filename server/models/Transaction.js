@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const TransactionSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true },
     type: { type: String, enum: ['expense', 'income'], required: true },
     amount: { type: Number, required: true },
     categoryId: { type: String, required: true },
@@ -18,7 +19,7 @@ const TransactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound Index for high-speed chronological and category queries
-TransactionSchema.index({ date: -1, type: 1, categoryId: 1 });
+// Compound Index for high-speed chronological and category queries per user
+TransactionSchema.index({ userId: 1, date: -1, type: 1, categoryId: 1 });
 
 export const Transaction = mongoose.model('Transaction', TransactionSchema);
