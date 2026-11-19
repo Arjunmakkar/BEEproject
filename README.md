@@ -1,100 +1,202 @@
 # FinPulse — Intelligent Personal Finance & Wealth Operating System
 
-FinPulse is an enterprise-grade, human-crafted personal wealth, budgeting, and financial management application built with **React 19**, **Vite**, **Express**, and a dual-mode **MongoDB Aggregation & In-Memory JSON Engine**.
+[![React 19](https://img.shields.io/badge/React-19.0-61dafb?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.3-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Dual--Mode-47a248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+FinPulse is an enterprise-grade, human-crafted personal wealth, budgeting, and financial management application. Designed from first principles to eliminate AI-generated visual cliches, FinPulse features a modern, tactile design system paired with a high-performance **Express + React 19** stack and a **dual-mode MongoDB aggregation & in-memory JSON engine**.
 
 ---
 
-## ✨ Features Implemented
+## ⚡ Instant Quick Start (Windows & Cross-Platform)
 
-### 1. 🔐 Personal User Authentication & Multi-Tenant Isolation
-- **Sign In & Account Registration**: Dedicated, realistic login portal with client and server-side validation.
-- **1-Click Demo Login**: Instant evaluation account (`demo@finpulse.app` / `password123`) loaded with sample data, charts, goals, and receipts.
-- **Multi-Tenant Ledgers**: Complete data isolation where transactions, categories, budgets, vaults, and subscriptions belong strictly to the authenticated user.
-- **Custom Currency Settings**: Switch seamlessly between **₹ INR**, **$ USD**, **€ EUR**, and **£ GBP** directly from your user menu; all reports, tables, charts, and PDF exports recalculate instantly.
-- **Secure Password Hashing & JWT**: Implemented with `bcryptjs` and `jsonwebtoken` middleware protecting all transactional endpoints.
+### Option 1: 1-Click Launch (Windows)
+Double-click `start-finpulse.bat` in the root folder. Both backend (Port 5000) and frontend (Port 3000) will start in separate terminal windows.
+
+### Option 2: Manual Terminal Setup
+
+```powershell
+# 1. Clone repository
+git clone https://github.com/Arjunmakkar/BEEproject.git
+cd BEEproject
+
+# 2. Start Backend (Terminal 1)
+cd server
+npm install
+npm start
+# -> Backend active on http://localhost:5000
+
+# 3. Start Frontend (Terminal 2)
+cd ../client
+npm install
+npm run dev
+# -> Frontend active on http://localhost:3000
+```
+
+### 🔑 Instant Demo Account
+No MongoDB or database configuration required to get started! FinPulse operates in dual mode with instant zero-friction evaluation:
+* **Email:** `demo@finpulse.app`
+* **Password:** `password123`
+* *(Or click the **1-Click Demo Login** pill on the sign-in screen)*.
+
+---
+
+## ✨ Features & Architecture Breakdown
+
+### 1. 🔐 Personal Authentication & Multi-Tenant Ledger Isolation
+* **Dedicated Authentication Portal**: Polished Sign In and Account Registration flows with client & server-side validation.
+* **1-Click Demo Account**: Instant zero-friction demo access loaded with realistic data, receipts, goals, and recurring bills.
+* **Strict Multi-Tenant Scoping**: All transactions, categories, budgets, vaults, and subscriptions are indexed and scoped by `userId`. Every new registrant begins with an isolated, personal ledger.
+* **Password Security & JWT**: Secure cryptographic password hashing via `bcryptjs` and stateless session verification using `jsonwebtoken` (`Authorization: Bearer <token>`).
+* **Profile Management & Currency Picker**: User initials avatar menu allowing one-click switching between **₹ INR**, **$ USD**, **€ EUR**, and **£ GBP**. All dashboards, charts, interest simulators, and export files recalculate instantaneously.
+
+---
 
 ### 2. 📊 Executive Financial Dashboard
-- **Key Metrics**: Lifetime Net Worth, Monthly Inflows, Monthly Outflows, and Net Savings Rate with dynamic threshold badges.
-- **Cash Flow Analytics**: Interactive Month-over-Month Cash Flow chart powered by Recharts.
-- **Category Expense Distribution**: Donut breakdown with real-time percentage shares.
+* **Real-Time KPIs**: Lifetime Net Worth, Monthly Inflows, Monthly Outflows, and Net Savings Rate with dynamic threshold color coding.
+* **Cash Flow Analytics**: Interactive Month-over-Month Cash Flow trajectory chart powered by Recharts.
+* **Expense Distribution Breakdown**: Donut visualization showing spending share across active budget categories.
+* **Recent Activity Feed**: Chronological list of latest transactions with category badges and receipt indicators.
 
-### 3. 🧾 Ledger & Receipt / Invoice Attachment
-- Searchable and filterable ledger (by category, type, date, or keywords).
-- **Receipt & Invoice Upload**: Attach bill/receipt images or PDFs directly to any transaction.
-- **Receipt Inspector Modal**: Preview and download receipts from within the ledger.
+---
+
+### 3. 🧾 Ledger & Receipt / Invoice Attachment Engine
+* **Universal Search & Filtering**: Instant search across keywords, category IDs, transaction types (`income` / `expense`), and date ranges.
+* **Receipt & Invoice Upload**: Attach digital receipts, bills, and invoices directly to any ledger entry (supports image and PDF previews).
+* **Receipt Inspector Modal**: High-resolution receipt viewer with zoom and direct download capabilities.
+* **Inline Transaction Management**: Quick add, edit, and deletion with instant balance recalculation.
+
+---
 
 ### 4. 🎯 Financial Goals & Savings Vaults ("Piggy Banks")
-- Create targeted savings vaults (*Emergency Fund*, *New Tech Setup*, *Travel*, *Health*).
-- Track funding percentage, target date, days remaining, and required monthly pace.
-- Interactive **Deposit** and **Withdraw** modal with full contribution history.
+* **Targeted Goal Creation**: Set up dedicated vaults for *Emergency Funds*, *Travel*, *Tech Upgrades*, or *Real Estate*.
+* **Progress Tracking**: Real-time pace tracking, target deadlines, days remaining, and required monthly contributions.
+* **Interactive Vault Modals**: One-click **Deposit** and **Withdraw** functions complete with chronological contribution logs.
+
+---
 
 ### 5. 📅 Recurring Bill & Subscription Calendar
-- 31-Day visual billing calendar highlighting upcoming due dates for active subscriptions (Rent, Fiber, Gym, Streaming, Cloud tools).
-- Monthly subscription burden calculation.
-- **1-Click "Mark as Paid"**: Automatically logs the expense entry directly into your ledger.
+* **31-Day Visual Grid**: Clean monthly calendar grid marking upcoming billing dates for utilities, streaming, gym, rent, and SaaS.
+* **Subscription Burden Metric**: Calculates total monthly fixed overhead committed to subscriptions.
+* **1-Click "Mark as Paid"**: Instantly records the recurring charge into the transaction ledger and logs payment confirmation.
+
+---
 
 ### 6. 🔮 Net Worth Growth & Compound Interest Simulator
-- Sliders for Initial Principal, Monthly SIP, Expected Annual Return (presets for FD 7%, Nifty 12%, Midcap 15%), and Time Horizon (up to 30 years).
-- **Inflation Adjustment**: Calculates real purchasing power using 6% inflation drag.
-- Compounding trajectory area chart and year-by-year schedule breakdown.
+* **Interactive Parameter Controls**: Principal investment, Monthly SIP additions, Expected annual rate of return, and Investment horizon (1 to 30 years).
+* **Market Presets**: 1-click benchmarks for *Fixed Deposit (7%)*, *Nifty / Index Fund (12%)*, and *Midcap Growth (15%)*.
+* **Inflation Adjustment**: Optional 6% inflation drag toggle to evaluate real future purchasing power.
+* **Trajectory Chart & Milestone Roadmap**: Visual area chart mapping total invested capital vs. compound interest earnings, plus year-by-year schedule breakdown.
 
-### 7. 📄 Official Monthly Statement (PDF) & Bank Statement CSV Engine
-- **Printable Account Statement**: Generates a clean, bank-grade monthly statement with `@media print` styling for 1-click "Save as PDF".
-- **Bank Statement CSV Import**: Drag-and-drop your bank/UPI CSV statement to parse and bulk-import into the ledger.
-- **Filtered CSV Export**: Export your entire transaction history.
+---
+
+### 7. 📄 Bank-Grade Statement (PDF) & CSV Engine
+* **Official Printable Statement (PDF)**: Generates an executive monthly financial statement with dedicated `@media print` styling for 1-click "Save as PDF" directly from the browser.
+* **Bank Statement CSV Import**: Drag-and-drop bank and UPI CSV statements to auto-parse and batch import entries.
+* **Filtered CSV Export**: Export your complete transactional history formatted for Excel or Google Sheets.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend:** React 19, Vite, Recharts, Lucide React
-- **Backend:** Node.js, Express
-- **Database:** MongoDB with Mongoose (with automated local fallback mode)
-- **Styling:** Custom modern tactile design system
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend UI** | React 19, Vite, Recharts, Lucide Icons, Modern CSS3 Design System |
+| **Backend API** | Node.js, Express, CORS, Multer |
+| **Authentication** | JWT (`jsonwebtoken`), Password Hashing (`bcryptjs`) |
+| **Database & Engine** | Dual Mode: MongoDB + Mongoose **OR** High-Speed In-Memory JSON Engine |
+| **Tooling & Deploy** | npm, Windows batch launcher, ESLint, Git |
 
 ---
 
-## 🚀 Quick Start Guide
+## 🍃 Database Engine & Dual-Mode Architecture
 
-### 1. Prerequisites
-- Node.js (v18+)
-- (Optional) MongoDB running locally on `mongodb://127.0.0.1:27017` *(Runs seamlessly in local offline mode if MongoDB is not connected)*.
+FinPulse includes an automated fallback mechanism:
+1. **MongoDB Mode (`SKIP_MONGODB=false`)**: Connects to MongoDB, utilizes compound indexing, and runs native aggregation pipelines.
+2. **Local Engine Mode (`SKIP_MONGODB=true`)**: Runs completely in memory with zero database dependencies. Seeds default demo data and saves new changes during the session.
 
-### 2. Start Both Servers
-On Windows, double-click:
-```powershell
-start-finpulse.bat
-```
+### Mongoose Schemas & Data Models (`server/models/`)
+* **`User.js`**: `name`, `email`, `passwordHash`, `currency`, `createdAt`.
+* **`Category.js`**: `name`, `type`, `color`, `icon`, `monthlyBudget`, `userId`.
+* **`Transaction.js`**: `title`, `amount`, `type`, `categoryId`, `date`, `receiptUrl`, `userId`.
+* **`Goal.js`**: `title`, `targetAmount`, `currentAmount`, `deadline`, `color`, `contributions[]`, `userId`.
+* **`Subscription.js`**: `name`, `amount`, `billingCycle`, `billingDay`, `category`, `isActive`, `userId`.
 
-Or manually:
-```powershell
-# Terminal 1: Backend
-cd server
-npm install
-npm start
-
-# Terminal 2: Frontend
-cd client
-npm install
-npm run dev
-```
-
-* **Frontend UI:** `http://localhost:3000`
-* **Backend API:** `http://localhost:5000`
+### High-Speed Indexing & Aggregations
+* **Compound Indexing**: `{ userId: 1, date: -1, type: 1 }` for high-throughput user-isolated chronological queries.
+* **Aggregation Pipelines**:
+  * `$match` + `$group` + `$sum`: Real-time category spending sums against budget thresholds.
+  * `$substr` + `$group`: Multi-month cash inflow/outflow trend analysis.
+  * `$facet`: Paginated retrieval and total record count in a single database roundtrip.
 
 ---
 
-## 🍃 MongoDB Features & Architecture
+## 🌐 REST API Specification
 
-1. **Mongoose Schemas & Models**:
-   - `server/models/User.js`: User credentials (hashed with bcrypt), profile preferences, and currency settings.
-   - `server/models/Category.js`: Category definitions and monthly budget limits scoped to user.
-   - `server/models/Transaction.js`: Transaction records with compound indexing and receipt attachments.
-   - `server/models/Goal.js`: Targeted savings vaults with deposit/withdraw ledger.
-   - `server/models/Subscription.js`: Recurring billing calendar tracking.
-2. **Compound Indexing**:
-   - `{ date: -1, type: 1, categoryId: 1 }` for high-speed chronological range and category filtering.
-3. **MongoDB Aggregation Pipelines**:
-   - `$match` + `$group` + `$sum`: Real-time category expense summarization.
-   - `$substr` + `$group`: Month-over-month trend analytics.
-   - `$facet`: Single-roundtrip execution of paginated items (`$skip`, `$limit`) and total record counting (`$count`).
+### Authentication (`/api/auth`)
+* `POST /api/auth/register` — Create new user account with seeded default budget categories.
+* `POST /api/auth/login` — Authenticate user and issue JWT token.
+* `GET /api/auth/me` — Retrieve current authenticated user profile (`requireAuth`).
+* `PUT /api/auth/profile` — Update user profile and currency preference (`requireAuth`).
+
+### Transactions & Categories
+* `GET /api/transactions` — Fetch filtered transactions (query: `type`, `categoryId`, `search`, `page`).
+* `POST /api/transactions` — Create a new transaction entry.
+* `PUT /api/transactions/:id` — Update transaction details or receipt attachment.
+* `DELETE /api/transactions/:id` — Remove transaction and update balances.
+* `GET /api/categories` — Fetch all categories with real-time budget spending.
+* `PUT /api/budgets` — Update monthly budget limit for a category.
+
+### Goals & Subscriptions
+* `GET /api/goals` — List all savings vaults.
+* `POST /api/goals` — Create a new savings vault.
+* `POST /api/goals/:id/contribute` — Deposit or withdraw funds from a vault.
+* `GET /api/subscriptions` — Fetch active recurring bills and calendar schedules.
+* `POST /api/subscriptions/:id/pay` — Mark subscription as paid and log transaction.
+
+### Analytics & Reports
+* `GET /api/reports/dashboard` — Aggregated net worth, cash flow trends, and category distribution.
+* `GET /api/reports/statement` — Formatted monthly statement summary for PDF generation.
+
+---
+
+## 📂 Project Directory Structure
+
+```
+BEEproject/
+├── client/                     # Frontend Application (React 19 + Vite)
+│   ├── src/
+│   │   ├── App.jsx             # Main Application & View Router
+│   │   ├── index.css           # Tactile Design System & Print Styles
+│   │   └── main.jsx            # React Root Entrypoint
+│   ├── index.html              # HTML5 Shell
+│   ├── package.json            # Frontend Dependencies & Scripts
+│   └── vite.config.js          # Vite Configuration
+│
+├── server/                     # Backend API (Node.js + Express)
+│   ├── data/                   # Fallback In-Memory Seed Data
+│   │   ├── categories.json     # Default Budget Categories
+│   │   ├── goals.json          # Seed Savings Vaults
+│   │   ├── subscriptions.json  # Seed Subscriptions
+│   │   └── transactions.json   # Seed Ledger Records
+│   ├── models/                 # Mongoose Data Schemas
+│   │   ├── Category.js         # Category Schema
+│   │   ├── Goal.js             # Savings Vault Schema
+│   │   ├── Subscription.js     # Subscription Schema
+│   │   ├── Transaction.js      # Ledger Transaction Schema
+│   │   └── User.js             # User & Auth Schema
+│   ├── .env.example            # Environment Variable Template
+│   ├── index.js                # Express Server, Routes, & Local Engine
+│   └── package.json            # Server Dependencies & Scripts
+│
+├── .gitignore                  # Git Ignore Configuration
+├── README.md                   # Comprehensive Project Documentation
+└── start-finpulse.bat          # 1-Click Windows Launcher Script
+```
+
+---
+
+## 📄 License
+This project is open-source and available under the [MIT License](LICENSE).
