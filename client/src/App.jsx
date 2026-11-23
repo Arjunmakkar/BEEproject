@@ -913,7 +913,7 @@ export default function App() {
           </div>
 
           {authError && (
-            <div style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.25)', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#fda4af', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#be123c', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <AlertCircle size={16} strokeWidth={1.75} />
               <span>{authError}</span>
             </div>
@@ -924,7 +924,7 @@ export default function App() {
               <div className="form-group">
                 <label className="form-label">Full Name</label>
                 <div style={{ position: 'relative' }}>
-                  <User size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                  <User size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="text"
                     required
@@ -941,7 +941,7 @@ export default function App() {
             <div className="form-group">
               <label className="form-label">Email Address</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                <Mail size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="email"
                   required
@@ -957,7 +957,7 @@ export default function App() {
             <div className="form-group">
               <label className="form-label">Password</label>
               <div style={{ position: 'relative' }}>
-                <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="password"
                   required
@@ -975,7 +975,7 @@ export default function App() {
               <div className="form-group">
                 <label className="form-label">Confirm Password</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                  <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="password"
                     required
@@ -1132,26 +1132,26 @@ export default function App() {
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Lifetime Net Worth</span>
-              <div className="metric-icon-box">
-                <Wallet size={17} />
+              <div className="metric-icon-box" style={{ color: 'var(--brand-primary)', background: 'var(--brand-subtle)' }}>
+                <Wallet size={17} strokeWidth={1.75} />
               </div>
             </div>
             <div className="metric-value">
               {formatMoney(summary.lifetimeBalance)}
             </div>
             <div className="metric-sub">
-              Your cumulative financial balance
+              Cumulative financial balance
             </div>
           </div>
 
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Monthly Inflow</span>
-              <div className="metric-icon-box" style={{ color: '#10b981' }}>
-                <TrendingUp size={17} />
+              <div className="metric-icon-box" style={{ color: 'var(--accent-income)', background: 'var(--accent-income-subtle)' }}>
+                <TrendingUp size={17} strokeWidth={1.75} />
               </div>
             </div>
-            <div className="metric-value" style={{ color: '#10b981' }}>
+            <div className="metric-value" style={{ color: 'var(--accent-income)' }}>
               +{formatMoney(summary.totalIncome)}
             </div>
             <div className="metric-sub">
@@ -1162,11 +1162,11 @@ export default function App() {
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Monthly Outflow</span>
-              <div className="metric-icon-box" style={{ color: '#f43f5e' }}>
-                <TrendingDown size={17} />
+              <div className="metric-icon-box" style={{ color: 'var(--accent-expense)', background: 'var(--accent-expense-subtle)' }}>
+                <TrendingDown size={17} strokeWidth={1.75} />
               </div>
             </div>
-            <div className="metric-value" style={{ color: '#f43f5e' }}>
+            <div className="metric-value" style={{ color: 'var(--accent-expense)' }}>
               -{formatMoney(summary.totalExpense)}
             </div>
             <div className="metric-sub">
@@ -1177,8 +1177,8 @@ export default function App() {
           <div className="metric-card">
             <div className="metric-header">
               <span className="metric-label">Net Saved & Rate</span>
-              <div className="metric-icon-box" style={{ color: '#06b6d4' }}>
-                <PiggyBank size={17} />
+              <div className="metric-icon-box" style={{ color: 'var(--accent-info)', background: 'var(--accent-info-subtle)' }}>
+                <PiggyBank size={17} strokeWidth={1.75} />
               </div>
             </div>
             <div className="metric-value">
@@ -1218,21 +1218,22 @@ export default function App() {
                 <div style={{ width: '100%', height: 280 }}>
                   <ResponsiveContainer>
                     <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
-                      <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="month" stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 12 }} />
+                      <YAxis stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#111827',
-                          borderColor: '#1f293d',
+                          backgroundColor: '#ffffff',
+                          borderColor: '#e2e8f0',
                           borderRadius: '8px',
-                          color: '#f9fafb',
+                          color: '#0f172a',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
                         }}
                         formatter={(val) => [formatMoney(val), '']}
                       />
                       <Legend wrapperStyle={{ paddingTop: 8 }} />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="income" name="Income" fill="#059669" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="expense" name="Expense" fill="#e11d48" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1275,15 +1276,16 @@ export default function App() {
                             paddingAngle={3}
                           >
                             {categoryReport.categories.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color || '#10b981'} />
+                              <Cell key={`cell-${index}`} fill={entry.color || '#059669'} />
                             ))}
                           </Pie>
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: '#111827',
-                              borderColor: '#1f293d',
+                              backgroundColor: '#ffffff',
+                              borderColor: '#e2e8f0',
                               borderRadius: '8px',
-                              color: '#fff',
+                              color: '#0f172a',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
                             }}
                             formatter={(val) => [formatMoney(val), 'Spent']}
                           />
@@ -2292,21 +2294,22 @@ export default function App() {
               <div style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer>
                   <AreaChart data={simResults.schedule} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
-                    <XAxis dataKey="year" stroke="#64748b" tick={{ fill: '#9ca3af' }} />
-                    <YAxis stroke="#64748b" tick={{ fill: '#9ca3af' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="year" stroke="#cbd5e1" tick={{ fill: '#64748b' }} />
+                    <YAxis stroke="#cbd5e1" tick={{ fill: '#64748b' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#111827',
-                        borderColor: '#1f293d',
+                        backgroundColor: '#ffffff',
+                        borderColor: '#e2e8f0',
                         borderRadius: '8px',
-                        color: '#f9fafb',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
                       }}
                       formatter={(val) => [formatMoney(val), '']}
                     />
                     <Legend wrapperStyle={{ paddingTop: 8 }} />
-                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#10b981" fill="rgba(16, 185, 129, 0.12)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#64748b" fill="rgba(100, 116, 139, 0.12)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#059669" fill="rgba(5, 150, 105, 0.12)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#64748b" fill="rgba(100, 116, 139, 0.08)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -2637,7 +2640,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="modal-body" style={{ alignItems: 'center', justifyContent: 'center', background: '#090d14', padding: '1.5rem' }}>
+              <div className="modal-body" style={{ alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card-secondary)', padding: '1.5rem' }}>
                 {inspectReceipt.receiptUrl ? (
                   <img
                     src={inspectReceipt.receiptUrl}
