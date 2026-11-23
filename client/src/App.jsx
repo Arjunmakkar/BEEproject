@@ -214,13 +214,21 @@ export default function App() {
   }, [token]);
 
   // Handle Logout
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('finpulse_token');
     localStorage.removeItem('finpulse_user');
     setToken(null);
     setCurrentUser(null);
-    showToast('Signed out successfully');
-  };
+    showToast('Signed out. Please sign in to continue.');
+  }, []);
+
+  // Support ?login or ?logout in URL to easily return to login screen
+  useEffect(() => {
+    if (window.location.search.includes('login') || window.location.search.includes('logout')) {
+      handleLogout();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [handleLogout]);
 
   // Handle Auth Login / Register
   const handleAuthSubmit = async (e) => {
@@ -1104,22 +1112,24 @@ export default function App() {
             <option value="GBP">£ GBP</option>
           </select>
 
-          {/* User Profile Pill & Logout */}
+          {/* User Profile Pill & Sign Out Button */}
           <div className="user-profile-menu">
             <div className="user-avatar">{initials}</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.785rem', fontWeight: 600, lineHeight: 1.2 }}>{currentUser?.name}</span>
               <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)', lineHeight: 1.1 }}>{currentUser?.email}</span>
             </div>
-            <button
-              className="btn btn-secondary btn-sm"
-              style={{ padding: '0.2rem 0.45rem', marginLeft: '0.25rem' }}
-              onClick={handleLogout}
-              title="Sign Out of Account"
-            >
-              <LogOut size={12} strokeWidth={1.75} />
-            </button>
           </div>
+
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={handleLogout}
+            title="Sign Out to Login Page"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border-highlight)' }}
+          >
+            <LogOut size={13} strokeWidth={1.75} />
+            <span>Sign Out</span>
+          </button>
 
           <button className="btn btn-primary" onClick={() => setIsAddTxOpen(true)}>
             <Plus size={15} strokeWidth={1.75} /> Record Transaction
