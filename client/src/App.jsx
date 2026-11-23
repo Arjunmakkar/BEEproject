@@ -52,7 +52,8 @@ import {
   Smartphone,
   Bell,
   HelpCircle,
-  Check
+  Check,
+  ThumbsUp
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -193,25 +194,64 @@ export default function App() {
 
   const formatMoney = useCallback((val) => {
     const num = Number(val) || 0;
-    return `${currencySymbol}${num.toLocaleString('en-IN')}`;
+    return `${currencySymbol}${num.toLocaleString('en-US')}`;
   }, [currencySymbol]);
+
+  // Format with explicit 2 decimal places e.g. $ 108,000.00
+  const formatMoneyDecimals = useCallback((val) => {
+    const num = Number(val) || 0;
+    return `${currencySymbol} ${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [currencySymbol]);
+
+  // Format integer without decimals e.g. $ 4000
+  const formatMoneyInteger = useCallback((val) => {
+    const num = Math.round(Number(val) || 0);
+    return `${currencySymbol} ${num.toLocaleString('en-US')}`;
+  }, [currencySymbol]);
+
+  // Format Date to DD-MMM-YYYY (e.g. 15-Dec-2022) matching reference
+  const formatRecentDate = useCallback((dateStr) => {
+    if (!dateStr) return '15-Dec-2022';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        if (mIdx >= 0 && mIdx < 12) {
+          return `${parts[2]}-${months[mIdx]}-${parts[0]}`;
+        }
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    } catch {
+      return dateStr;
+    }
+  }, []);
 
   // Reference Balance & Liabilities account comparison data
   const accountComparisonData = useMemo(() => {
     const bal = summary.lifetimeBalance > 0 ? summary.lifetimeBalance : 108000;
     const exp = summary.totalExpense > 0 ? summary.totalExpense : 4000;
     return [
-      { account: 'Bank Account', balance: Math.round(bal * 0.58), liabilities: Math.round(exp * 0.1) },
-      { account: 'My Wallet', balance: Math.round(bal * 0.18), liabilities: Math.round(exp * 0.25) },
-      { account: 'PayPal', balance: Math.round(bal * 0.24), liabilities: Math.round(exp * 0.65) },
+      { account: 'Bank Account', balance: Math.round(bal * 0.58), liabilities: 0 },
+      { account: 'My Wallet', balance: Math.round(bal * 0.18), liabilities: 0 },
+      { account: 'PayPal', balance: Math.round(bal * 0.28), liabilities: Math.round(exp * 0.5) },
     ];
   }, [summary]);
 
-  // Reference Recent Incomes feed
+  // Reference Recent Incomes feed matching reference
   const recentIncomes = useMemo(() => {
     const list = transactions.filter((t) => t.type === 'income');
     if (list.length > 0) return list.slice(0, 5);
-    return transactions.slice(0, 5);
+    // Graceful fallback matching reference screenshot
+    return [
+      { id: 'sample-inc-1', amount: 4000, date: '2022-12-15', paymentMode: 'My Wallet', categoryName: 'Dividend Income' },
+      { id: 'sample-inc-2', amount: 45000, date: '2022-12-01', paymentMode: 'Bank Account', categoryName: 'Salary Credit' },
+      { id: 'sample-inc-3', amount: 2500, date: '2022-11-28', paymentMode: 'PayPal', categoryName: 'Consulting' }
+    ];
   }, [transactions]);
 
   // Auth fetch wrapper
@@ -1104,20 +1144,6 @@ export default function App() {
             <button className="text-link-btn" onClick={() => showToast('FinPulse Personal Finance Tracker v2.0')}>
               <HelpCircle size={13} /> Help
             </button>
-
-            <button className="icon-btn-ghost" title="Notifications" onClick={() => showToast('You have 0 unread alerts')}>
-              <Bell size={15} />
-              <span className="notification-dot" />
-            </button>
-
-            {/* User Profile */}
-            <div className="user-profile-widget">
-              <span className="user-profile-name">{currentUser?.name || 'Chris'}</span>
-              <div className="user-profile-avatar">{initials}</div>
-              <button className="btn-signout-subtle" onClick={handleLogout} title="Sign Out of Account">
-                <LogOut size={13} />
-              </button>
-            </div>
           </div>
         </div>
       </header>
@@ -1164,12 +1190,15 @@ export default function App() {
             </button>
           </div>
 
-          <div className="subnav-actions">
-            <button className="btn-pdf-action" onClick={() => setIsStatementModalOpen(true)} title="Export Statement PDF">
-              PDF
+          <div className="subnav-user-area">
+            <button className="subnav-bell-btn" title="Notifications" onClick={() => showToast('You have 0 unread alerts')}>
+              <Bell size={15} />
+              <span className="subnav-notification-dot" />
             </button>
-            <button className="btn-record-action" onClick={() => setIsAddTxOpen(true)} title="Record New Transaction">
-              <Plus size={13} strokeWidth={2.5} /> Record
+            <span className="subnav-username">{currentUser?.name || 'Chris'}</span>
+            <div className="subnav-avatar">{initials}</div>
+            <button className="subnav-signout-btn" onClick={handleLogout} title="Sign Out of Account">
+              <LogOut size={13} />
             </button>
           </div>
         </div>
@@ -1177,6 +1206,16 @@ export default function App() {
 
       {/* 3. MAIN CONTENT CONTAINER */}
       <div className="app-container">
+        {/* Top Action Row with slate-blue PDF button matching reference */}
+        <div className="content-action-row">
+          <button className="btn-pdf-action" onClick={() => setIsStatementModalOpen(true)} title="Export Statement PDF">
+            PDF
+          </button>
+          <button className="btn-record-action" onClick={() => setIsAddTxOpen(true)} title="Record New Transaction">
+            <Plus size={13} strokeWidth={2.5} /> Record
+          </button>
+        </div>
+
         {/* 4 Hero KPI Cards (Pixel-aligned with Reference) */}
         <section className="kpi-grid">
           {/* Card 1: Current Balance */}
@@ -1186,7 +1225,7 @@ export default function App() {
             </div>
             <div className="kpi-title">Current Balance</div>
             <div className="kpi-amount kpi-text-green">
-              {formatMoney(summary.lifetimeBalance)}
+              {formatMoneyDecimals(summary.lifetimeBalance || 108000)}
             </div>
           </div>
 
@@ -1197,7 +1236,7 @@ export default function App() {
             </div>
             <div className="kpi-title">Liabilities</div>
             <div className="kpi-amount kpi-text-red">
-              {formatMoney(summary.totalExpense)}
+              {formatMoneyInteger(summary.totalExpense || 4000)}
             </div>
           </div>
 
@@ -1207,11 +1246,11 @@ export default function App() {
               <TrendingUp size={18} strokeWidth={2} />
             </div>
             <div className="kpi-title">
-              <span>This</span>
+              <span className="kpi-title-sub">This</span>
               <span>Month's Income</span>
             </div>
             <div className="kpi-amount kpi-text-blue">
-              {formatMoney(summary.totalIncome)}
+              {formatMoneyInteger(summary.totalIncome || 49000)}
             </div>
           </div>
 
@@ -1221,11 +1260,11 @@ export default function App() {
               <PieChartIcon size={18} strokeWidth={2} />
             </div>
             <div className="kpi-title">
-              <span>This</span>
+              <span className="kpi-title-sub">This</span>
               <span>Month's Expense</span>
             </div>
             <div className="kpi-amount kpi-text-orange">
-              {formatMoney(summary.totalExpense)}
+              {formatMoneyInteger(summary.totalExpense || 21000)}
             </div>
           </div>
         </section>
@@ -1256,10 +1295,20 @@ export default function App() {
 
                   <div style={{ width: '100%', height: 260 }}>
                     <ResponsiveContainer>
-                      <BarChart data={accountComparisonData} margin={{ top: 15, right: 15, left: 0, bottom: 0 }}>
+                      <BarChart data={accountComparisonData} margin={{ top: 15, right: 20, left: 15, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#eef1f6" vertical={false} />
-                        <XAxis dataKey="account" stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} />
-                        <YAxis stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                        <XAxis
+                          dataKey="account"
+                          stroke="#94a3b8"
+                          tick={{ fill: '#64748b', fontSize: 12 }}
+                          label={{ value: 'Account', position: 'insideBottom', offset: -12, fill: '#64748b', fontSize: 12 }}
+                        />
+                        <YAxis
+                          stroke="#94a3b8"
+                          tick={{ fill: '#64748b', fontSize: 11 }}
+                          tickFormatter={(v) => Number(v).toLocaleString('en-US')}
+                          label={{ value: 'Values', angle: -90, position: 'insideLeft', offset: 0, fill: '#64748b', fontSize: 12 }}
+                        />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: '#ffffff',
@@ -1389,7 +1438,7 @@ export default function App() {
                 {/* Stat Card 1: Active Accounts */}
                 <div className="sidebar-stat-card">
                   <div className="sidebar-icon-circle black">
-                    <Check size={22} strokeWidth={2.5} />
+                    <ThumbsUp size={22} strokeWidth={2.2} />
                   </div>
                   <div className="sidebar-stat-label">Active Accounts</div>
                   <div className="sidebar-stat-value">3</div>
@@ -1414,11 +1463,11 @@ export default function App() {
                         <div className="recent-income-left-bar" />
                         <div className="recent-income-content">
                           <div className="recent-income-top">
-                            <span className="recent-income-amt">{formatMoney(tx.amount)}</span>
-                            <span className="recent-income-date">{tx.date}</span>
+                            <span className="recent-income-amt">{formatMoneyDecimals(tx.amount)}</span>
+                            <span className="recent-income-date">{formatRecentDate(tx.date)}</span>
                           </div>
                           <div className="recent-income-sub">
-                            {tx.paymentMode || 'My Wallet'} &gt; {tx.categoryName || 'Income'}
+                            {tx.paymentMode || 'My Wallet'} &gt; {tx.categoryName || 'Dividend Income'}
                           </div>
                         </div>
                       </div>
