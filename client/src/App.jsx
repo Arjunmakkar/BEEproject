@@ -47,7 +47,12 @@ import {
   ShoppingBag,
   Utensils,
   Car,
-  Tag
+  Tag,
+  Tablet,
+  Smartphone,
+  Bell,
+  HelpCircle,
+  Check
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -190,6 +195,24 @@ export default function App() {
     const num = Number(val) || 0;
     return `${currencySymbol}${num.toLocaleString('en-IN')}`;
   }, [currencySymbol]);
+
+  // Reference Balance & Liabilities account comparison data
+  const accountComparisonData = useMemo(() => {
+    const bal = summary.lifetimeBalance > 0 ? summary.lifetimeBalance : 108000;
+    const exp = summary.totalExpense > 0 ? summary.totalExpense : 4000;
+    return [
+      { account: 'Bank Account', balance: Math.round(bal * 0.58), liabilities: Math.round(exp * 0.1) },
+      { account: 'My Wallet', balance: Math.round(bal * 0.18), liabilities: Math.round(exp * 0.25) },
+      { account: 'PayPal', balance: Math.round(bal * 0.24), liabilities: Math.round(exp * 0.65) },
+    ];
+  }, [summary]);
+
+  // Reference Recent Incomes feed
+  const recentIncomes = useMemo(() => {
+    const list = transactions.filter((t) => t.type === 'income');
+    if (list.length > 0) return list.slice(0, 5);
+    return transactions.slice(0, 5);
+  }, [transactions]);
 
   // Auth fetch wrapper
   const authFetch = useCallback(async (url, options = {}) => {
@@ -1028,308 +1051,385 @@ export default function App() {
     : 'U';
 
   return (
-    <div className="app-container">
-      {/* Navigation Bar */}
-      <header className="navbar">
-        <div className="brand">
-          <div className="brand-icon">
-            <Wallet size={18} strokeWidth={1.75} />
+    <div className="app-shell">
+      {/* 1. TOP UTILITY HEADER (White Bar) */}
+      <header className="top-header">
+        <div className="top-header-inner">
+          <div className="brand">
+            <div className="brand-logo-glyph">
+              <Wallet size={16} strokeWidth={2} />
+            </div>
+            <span className="brand-title">Personal Finance Tracker</span>
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="brand-title">FinPulse</span>
-              <span className="brand-badge">Financial OS</span>
+
+          <div className="top-header-center">
+            {/* View Mode Switcher */}
+            <div className="device-switcher">
+              <span className="device-icon active" title="Desktop View"><Laptop size={14} /></span>
+              <span className="device-icon" title="Tablet View"><Tablet size={14} /></span>
+              <span className="device-icon" title="Mobile View"><Smartphone size={14} /></span>
+            </div>
+
+            <div className="top-header-divider" />
+
+            <div className="month-picker-pill">
+              <Calendar size={13} style={{ color: '#64748b' }} />
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </div>
+
+            <select
+              className="currency-select-pill"
+              value={currentUser?.currency || 'USD'}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              title="Change Account Currency"
+            >
+              <option value="USD">$ USD</option>
+              <option value="INR">₹ INR</option>
+              <option value="EUR">€ EUR</option>
+              <option value="GBP">£ GBP</option>
+            </select>
+          </div>
+
+          <div className="top-header-right">
+            <button className="text-link-btn" onClick={() => setActiveTab('budgets')}>
+              Subscription
+            </button>
+            <button className="text-link-btn" onClick={() => setIsAddTxOpen(true)}>
+              <Edit2 size={12} /> Edit this application
+            </button>
+            <button className="text-link-btn" onClick={() => showToast('FinPulse Personal Finance Tracker v2.0')}>
+              <HelpCircle size={13} /> Help
+            </button>
+
+            <button className="icon-btn-ghost" title="Notifications" onClick={() => showToast('You have 0 unread alerts')}>
+              <Bell size={15} />
+              <span className="notification-dot" />
+            </button>
+
+            {/* User Profile */}
+            <div className="user-profile-widget">
+              <span className="user-profile-name">{currentUser?.name || 'Chris'}</span>
+              <div className="user-profile-avatar">{initials}</div>
+              <button className="btn-signout-subtle" onClick={handleLogout} title="Sign Out of Account">
+                <LogOut size={13} />
+              </button>
             </div>
           </div>
-        </div>
-
-        <nav className="nav-links">
-          <button
-            className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <BarChart3 size={15} strokeWidth={1.75} /> Dashboard
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transactions')}
-          >
-            <CreditCard size={15} strokeWidth={1.75} /> Ledger
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'budgets' ? 'active' : ''}`}
-            onClick={() => setActiveTab('budgets')}
-          >
-            <PiggyBank size={15} strokeWidth={1.75} /> Budgets
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'goals' ? 'active' : ''}`}
-            onClick={() => setActiveTab('goals')}
-          >
-            <Target size={15} strokeWidth={1.75} /> Savings Vaults
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'subscriptions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('subscriptions')}
-          >
-            <Calendar size={15} strokeWidth={1.75} /> Bill Calendar
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'simulator' ? 'active' : ''}`}
-            onClick={() => setActiveTab('simulator')}
-          >
-            <TrendingUp size={15} strokeWidth={1.75} /> Wealth Simulator
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'statements' ? 'active' : ''}`}
-            onClick={() => setActiveTab('statements')}
-          >
-            <FileText size={15} strokeWidth={1.75} /> Statements & CSV
-          </button>
-        </nav>
-
-        <div className="nav-actions">
-          <div className="month-picker-container">
-            <Calendar size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            />
-          </div>
-
-          {/* Currency Switcher */}
-          <select
-            className="select-filter"
-            style={{ padding: '0.35rem 0.55rem', fontSize: '0.8rem' }}
-            value={currentUser?.currency || 'INR'}
-            onChange={(e) => handleCurrencyChange(e.target.value)}
-            title="Change Account Currency"
-          >
-            <option value="INR">₹ INR</option>
-            <option value="USD">$ USD</option>
-            <option value="EUR">€ EUR</option>
-            <option value="GBP">£ GBP</option>
-          </select>
-
-          {/* User Profile Pill & Sign Out Button */}
-          <div className="user-profile-menu">
-            <div className="user-avatar">{initials}</div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.785rem', fontWeight: 600, lineHeight: 1.2 }}>{currentUser?.name}</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)', lineHeight: 1.1 }}>{currentUser?.email}</span>
-            </div>
-          </div>
-
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={handleLogout}
-            title="Sign Out to Login Page"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border-highlight)' }}
-          >
-            <LogOut size={13} strokeWidth={1.75} />
-            <span>Sign Out</span>
-          </button>
-
-          <button className="btn btn-primary" onClick={() => setIsAddTxOpen(true)}>
-            <Plus size={15} strokeWidth={1.75} /> Record Transaction
-          </button>
         </div>
       </header>
 
-        {/* Global Key Metrics Header */}
-        <section className="metrics-grid">
-          <div className="metric-card">
-            <div className="metric-header">
-              <span className="metric-label">Lifetime Net Worth</span>
-              <div className="metric-icon-box" style={{ color: 'var(--brand-primary)', background: 'var(--brand-subtle)' }}>
-                <Wallet size={17} strokeWidth={1.75} />
-              </div>
+      {/* 2. SUB-NAVIGATION BAR (Dark Charcoal Bar) */}
+      <nav className="subnav-bar">
+        <div className="subnav-inner">
+          <div className="subnav-links">
+            <button
+              className={`subnav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              <BarChart3 size={14} strokeWidth={1.75} /> Transactions
+            </button>
+            <button
+              className={`subnav-tab ${activeTab === 'transactions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('transactions')}
+            >
+              <CreditCard size={14} strokeWidth={1.75} /> Accounts
+            </button>
+            <button
+              className={`subnav-tab ${activeTab === 'budgets' ? 'active' : ''}`}
+              onClick={() => setActiveTab('budgets')}
+            >
+              <Tag size={14} strokeWidth={1.75} /> Incomes
+            </button>
+            <button
+              className={`subnav-tab ${activeTab === 'goals' ? 'active' : ''}`}
+              onClick={() => setActiveTab('goals')}
+            >
+              <TrendingDown size={14} strokeWidth={1.75} /> Expenses
+            </button>
+            <button
+              className={`subnav-tab ${activeTab === 'simulator' ? 'active' : ''}`}
+              onClick={() => setActiveTab('simulator')}
+            >
+              <PiggyBank size={14} strokeWidth={1.75} /> Amount Transfers
+            </button>
+            <button
+              className={`subnav-tab ${activeTab === 'subscriptions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('subscriptions')}
+            >
+              <Calendar size={14} strokeWidth={1.75} /> Reminders
+            </button>
+          </div>
+
+          <div className="subnav-actions">
+            <button className="btn-pdf-action" onClick={() => setIsStatementModalOpen(true)} title="Export Statement PDF">
+              PDF
+            </button>
+            <button className="btn-record-action" onClick={() => setIsAddTxOpen(true)} title="Record New Transaction">
+              <Plus size={13} strokeWidth={2.5} /> Record
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* 3. MAIN CONTENT CONTAINER */}
+      <div className="app-container">
+        {/* 4 Hero KPI Cards (Pixel-aligned with Reference) */}
+        <section className="kpi-grid">
+          {/* Card 1: Current Balance */}
+          <div className="kpi-card">
+            <div className="kpi-badge kpi-badge-green">
+              <span>$</span>
             </div>
-            <div className="metric-value">
+            <div className="kpi-title">Current Balance</div>
+            <div className="kpi-amount kpi-text-green">
               {formatMoney(summary.lifetimeBalance)}
             </div>
-            <div className="metric-sub">
-              Cumulative financial balance
+          </div>
+
+          {/* Card 2: Liabilities */}
+          <div className="kpi-card">
+            <div className="kpi-badge kpi-badge-red">
+              <CreditCard size={18} strokeWidth={2} />
+            </div>
+            <div className="kpi-title">Liabilities</div>
+            <div className="kpi-amount kpi-text-red">
+              {formatMoney(summary.totalExpense)}
             </div>
           </div>
 
-          <div className="metric-card">
-            <div className="metric-header">
-              <span className="metric-label">Monthly Inflow</span>
-              <div className="metric-icon-box" style={{ color: 'var(--accent-income)', background: 'var(--accent-income-subtle)' }}>
-                <TrendingUp size={17} strokeWidth={1.75} />
-              </div>
+          {/* Card 3: This Month's Income */}
+          <div className="kpi-card">
+            <div className="kpi-badge kpi-badge-blue">
+              <TrendingUp size={18} strokeWidth={2} />
             </div>
-            <div className="metric-value" style={{ color: 'var(--accent-income)' }}>
-              +{formatMoney(summary.totalIncome)}
+            <div className="kpi-title">
+              <span>This</span>
+              <span>Month's Income</span>
             </div>
-            <div className="metric-sub">
-              Earned in {selectedMonth}
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-header">
-              <span className="metric-label">Monthly Outflow</span>
-              <div className="metric-icon-box" style={{ color: 'var(--accent-expense)', background: 'var(--accent-expense-subtle)' }}>
-                <TrendingDown size={17} strokeWidth={1.75} />
-              </div>
-            </div>
-            <div className="metric-value" style={{ color: 'var(--accent-expense)' }}>
-              -{formatMoney(summary.totalExpense)}
-            </div>
-            <div className="metric-sub">
-              Across {summary.transactionCount || 0} personal records
+            <div className="kpi-amount kpi-text-blue">
+              {formatMoney(summary.totalIncome)}
             </div>
           </div>
 
-          <div className="metric-card">
-            <div className="metric-header">
-              <span className="metric-label">Net Saved & Rate</span>
-              <div className="metric-icon-box" style={{ color: 'var(--accent-info)', background: 'var(--accent-info-subtle)' }}>
-                <PiggyBank size={17} strokeWidth={1.75} />
-              </div>
+          {/* Card 4: This Month's Expense */}
+          <div className="kpi-card">
+            <div className="kpi-badge kpi-badge-orange">
+              <PieChartIcon size={18} strokeWidth={2} />
             </div>
-            <div className="metric-value">
-              {formatMoney(summary.netSavings)}
+            <div className="kpi-title">
+              <span>This</span>
+              <span>Month's Expense</span>
             </div>
-            <div className="metric-sub">
-              <span className={`badge-tag ${summary.savingsRate >= 20 ? 'badge-emerald' : 'badge-amber'}`}>
-                {summary.savingsRate || 0}% Savings Rate
-              </span>
+            <div className="kpi-amount kpi-text-orange">
+              {formatMoney(summary.totalExpense)}
             </div>
           </div>
         </section>
 
         {/* ========================================================= */}
-        {/* TAB 1: EXECUTIVE DASHBOARD */}
+        {/* TAB 1: EXECUTIVE DASHBOARD (Reference Two-Column Layout) */}
         {/* ========================================================= */}
         {activeTab === 'dashboard' && (
           <div>
-            <div className="charts-grid">
-              {/* Cash Flow Bar Chart */}
-              <div className="panel-card">
-                <div className="panel-header">
-                  <div className="panel-title">
-                    <BarChart3 size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
-                    Month-over-Month Cash Flow ({selectedMonth.split('-')[0]})
+            <div className="reference-dashboard-layout">
+              {/* Left Column (68%) */}
+              <div className="reference-left-col">
+                {/* Section 1: Balance And Liabilities */}
+                <div className="section-header-row">
+                  <h2 className="section-title">Balance And Liabilities</h2>
+                </div>
+
+                <div className="dashboard-card">
+                  {/* Legend matching reference */}
+                  <div className="chart-legend-row">
+                    <span className="legend-item">
+                      <span className="legend-box legend-box-red" /> Liabilities
+                    </span>
+                    <span className="legend-item">
+                      <span className="legend-box legend-box-gold" /> Current Balance
+                    </span>
                   </div>
-                  <div className="panel-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={handleProcessRecurring} title="Execute scheduled bills">
-                      <RefreshCw size={13} strokeWidth={1.75} /> Process Recurring Bills
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setIsStatementModalOpen(true)}>
-                      <Printer size={13} strokeWidth={1.75} /> Statement PDF
-                    </button>
+
+                  <div style={{ width: '100%', height: 260 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={accountComparisonData} margin={{ top: 15, right: 15, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#eef1f6" vertical={false} />
+                        <XAxis dataKey="account" stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <YAxis stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            borderColor: '#e2e8f0',
+                            borderRadius: '6px',
+                            color: '#1e293b',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                          }}
+                          formatter={(val) => [formatMoney(val), '']}
+                        />
+                        <Bar dataKey="liabilities" name="Liabilities" fill="#d9534f" radius={[2, 2, 0, 0]} maxBarSize={45} />
+                        <Bar dataKey="balance" name="Current Balance" fill="#d4a359" radius={[2, 2, 0, 0]} maxBarSize={45} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div style={{ width: '100%', height: 280 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1d2335" vertical={false} />
-                      <XAxis dataKey="month" stroke="#343d56" tick={{ fill: '#9aa4b8', fontSize: 12 }} />
-                      <YAxis stroke="#343d56" tick={{ fill: '#9aa4b8', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#131722',
-                          borderColor: '#2d354d',
-                          borderRadius: '8px',
-                          color: '#f8fafc',
-                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.55)',
-                        }}
-                        formatter={(val) => [formatMoney(val), '']}
-                      />
-                      <Legend wrapperStyle={{ paddingTop: 8 }} />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                {/* Section 2: Income & Cash Flow */}
+                <div className="section-header-row" style={{ marginTop: 'var(--space-4)' }}>
+                  <h2 className="section-title">Income</h2>
+                </div>
+
+                <div className="dashboard-card">
+                  <div className="card-top-action-bar">
+                    <span className="card-inner-subtitle">Income Chart</span>
+                    <button className="btn-regenerate" onClick={handleProcessRecurring} title="Execute scheduled recurring bills">
+                      Regenerate
+                    </button>
+                  </div>
+
+                  <div style={{ width: '100%', height: 210, marginTop: '0.75rem' }}>
+                    <ResponsiveContainer>
+                      <BarChart data={monthlyTrends} margin={{ top: 10, right: 15, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#eef1f6" vertical={false} />
+                        <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <YAxis stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            borderColor: '#e2e8f0',
+                            borderRadius: '6px',
+                            color: '#1e293b',
+                          }}
+                          formatter={(val) => [formatMoney(val), '']}
+                        />
+                        <Bar dataKey="income" name="Income" fill="#3b82f6" radius={[2, 2, 0, 0]} maxBarSize={36} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Section 3: Expense Breakdown Donut */}
+                <div className="dashboard-card" style={{ marginTop: '0.25rem' }}>
+                  <div className="section-header-row" style={{ marginBottom: '0.75rem' }}>
+                    <h3 className="section-title" style={{ fontSize: '0.9375rem' }}>Expense Distribution</h3>
+                  </div>
+
+                  {categoryReport.categories.length === 0 ? (
+                    <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1rem 0' }}>
+                      <div className="empty-state-icon">
+                        <PieChartIcon size={20} strokeWidth={1.75} />
+                      </div>
+                      <div className="empty-state-content">
+                        <div className="empty-state-title">No expenses recorded yet</div>
+                        <p className="empty-state-desc">As you log expenses for {selectedMonth}, this chart will display distribution.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '1rem', alignItems: 'center' }}>
+                      <div style={{ width: '100%', height: 160 }}>
+                        <ResponsiveContainer>
+                          <PieChart>
+                            <Pie
+                              data={categoryReport.categories}
+                              dataKey="total"
+                              nameKey="categoryName"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={65}
+                              paddingAngle={3}
+                            >
+                              {categoryReport.categories.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color || '#059669'} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: '#ffffff',
+                                borderColor: '#e2e8f0',
+                                borderRadius: '6px',
+                                color: '#1e293b',
+                              }}
+                              formatter={(val) => [formatMoney(val), 'Spent']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {categoryReport.categories.slice(0, 4).map((c) => (
+                            <div key={c.categoryId} style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.785rem' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color }} />
+                                  {c.categoryName}
+                                </span>
+                                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                                  {formatMoney(c.total)} ({c.percentage}%)
+                                </span>
+                              </div>
+                              <div className="progress-track" style={{ height: '4px' }}>
+                                <div className="progress-bar" style={{ width: `${c.percentage}%`, background: c.color }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Expense Breakdown Donut */}
-              <div className="panel-card">
-                <div className="panel-header">
-                  <div className="panel-title">
-                    <PieChartIcon size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
-                    Expense Distribution
+              {/* Right Column (32%) */}
+              <div className="reference-right-col">
+                {/* Stat Card 1: Active Accounts */}
+                <div className="sidebar-stat-card">
+                  <div className="sidebar-icon-circle black">
+                    <Check size={22} strokeWidth={2.5} />
                   </div>
+                  <div className="sidebar-stat-label">Active Accounts</div>
+                  <div className="sidebar-stat-value">3</div>
                 </div>
 
-                {categoryReport.categories.length === 0 ? (
-                  <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1.5rem 0' }}>
-                    <div className="empty-state-icon">
-                      <PieChartIcon size={20} strokeWidth={1.75} />
-                    </div>
-                    <div className="empty-state-content">
-                      <div className="empty-state-title">No expenses recorded yet</div>
-                      <p className="empty-state-desc">
-                        As you log expense entries for {selectedMonth}, this chart will display spending breakdown by category.
-                      </p>
-                    </div>
+                {/* Stat Card 2: Archive Accounts */}
+                <div className="sidebar-stat-card">
+                  <div className="sidebar-icon-circle gray">
+                    <RefreshCw size={18} strokeWidth={2} />
                   </div>
-                ) : (
-                  <div>
-                    <div style={{ width: '100%', height: 170 }}>
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={categoryReport.categories}
-                            dataKey="total"
-                            nameKey="categoryName"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={45}
-                            outerRadius={72}
-                            paddingAngle={3}
-                          >
-                            {categoryReport.categories.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color || '#059669'} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#131722',
-                              borderColor: '#2d354d',
-                              borderRadius: '8px',
-                              color: '#f8fafc',
-                              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.55)',
-                            }}
-                            formatter={(val) => [formatMoney(val), 'Spent']}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <div className="sidebar-stat-label">Archive Accounts</div>
+                  <div className="sidebar-stat-value">{subscriptions.length || 1}</div>
+                </div>
 
-                    <div style={{ maxHeight: '150px', overflowY: 'auto', marginTop: '0.5rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                        {categoryReport.categories.slice(0, 4).map((c) => (
-                          <div key={c.categoryId} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color }} />
-                                {c.categoryName}
-                              </span>
-                              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-                                {formatMoney(c.total)} ({c.percentage}%)
-                              </span>
-                            </div>
-                            <div className="progress-track" style={{ height: '5px' }}>
-                              <div className="progress-bar" style={{ width: `${c.percentage}%`, background: c.color }} />
-                            </div>
+                {/* Card 3: Recent Incomes Feed */}
+                <div className="dashboard-card recent-incomes-card">
+                  <h3 className="recent-card-title">Recent Incomes</h3>
+
+                  <div className="recent-incomes-list">
+                    {recentIncomes.map((tx) => (
+                      <div key={tx.id} className="recent-income-item">
+                        <div className="recent-income-left-bar" />
+                        <div className="recent-income-content">
+                          <div className="recent-income-top">
+                            <span className="recent-income-amt">{formatMoney(tx.amount)}</span>
+                            <span className="recent-income-date">{tx.date}</span>
                           </div>
-                        ))}
+                          <div className="recent-income-sub">
+                            {tx.paymentMode || 'My Wallet'} &gt; {tx.categoryName || 'Income'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
-            {/* Quick Glance at Active Vaults & Upcoming Bills */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
+            {/* Bottom Row: Savings Vaults & Subscriptions Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-5)', marginTop: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
               {/* Top Savings Vaults */}
               <div className="panel-card">
                 <div className="panel-header">
@@ -3131,5 +3231,6 @@ export default function App() {
           </div>
         )}
       </div>
+    </div>
   );
 }
