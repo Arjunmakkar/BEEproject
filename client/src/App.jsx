@@ -913,7 +913,7 @@ export default function App() {
           </div>
 
           {authError && (
-            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#be123c', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#fda4af', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <AlertCircle size={16} strokeWidth={1.75} />
               <span>{authError}</span>
             </div>
@@ -1218,22 +1218,22 @@ export default function App() {
                 <div style={{ width: '100%', height: 280 }}>
                   <ResponsiveContainer>
                     <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis dataKey="month" stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 12 }} />
-                      <YAxis stroke="#cbd5e1" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1d2335" vertical={false} />
+                      <XAxis dataKey="month" stroke="#343d56" tick={{ fill: '#9aa4b8', fontSize: 12 }} />
+                      <YAxis stroke="#343d56" tick={{ fill: '#9aa4b8', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#ffffff',
-                          borderColor: '#e2e8f0',
+                          backgroundColor: '#131722',
+                          borderColor: '#2d354d',
                           borderRadius: '8px',
-                          color: '#0f172a',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                          color: '#f8fafc',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.55)',
                         }}
                         formatter={(val) => [formatMoney(val), '']}
                       />
                       <Legend wrapperStyle={{ paddingTop: 8 }} />
-                      <Bar dataKey="income" name="Income" fill="#059669" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="expense" name="Expense" fill="#e11d48" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1281,11 +1281,11 @@ export default function App() {
                           </Pie>
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: '#ffffff',
-                              borderColor: '#e2e8f0',
+                              backgroundColor: '#131722',
+                              borderColor: '#2d354d',
                               borderRadius: '8px',
-                              color: '#0f172a',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                              color: '#f8fafc',
+                              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.55)',
                             }}
                             formatter={(val) => [formatMoney(val), 'Spent']}
                           />
@@ -2294,22 +2294,22 @@ export default function App() {
               <div style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer>
                   <AreaChart data={simResults.schedule} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="year" stroke="#cbd5e1" tick={{ fill: '#64748b' }} />
-                    <YAxis stroke="#cbd5e1" tick={{ fill: '#64748b' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1d2335" vertical={false} />
+                    <XAxis dataKey="year" stroke="#343d56" tick={{ fill: '#9aa4b8' }} />
+                    <YAxis stroke="#343d56" tick={{ fill: '#9aa4b8' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#ffffff',
-                        borderColor: '#e2e8f0',
+                        backgroundColor: '#131722',
+                        borderColor: '#2d354d',
                         borderRadius: '8px',
-                        color: '#0f172a',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                        color: '#f8fafc',
+                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.55)',
                       }}
                       formatter={(val) => [formatMoney(val), '']}
                     />
                     <Legend wrapperStyle={{ paddingTop: 8 }} />
-                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#059669" fill="rgba(5, 150, 105, 0.12)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#64748b" fill="rgba(100, 116, 139, 0.08)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#e5c07b" fill="rgba(229, 192, 123, 0.16)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#647087" fill="rgba(100, 112, 135, 0.1)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

@@ -1,38 +1,38 @@
 :root {
   /* ========================================================= */
-  /* STRIPE / MERCURY CLEAN FINTECH PALETTE (Human-Designed) */
+  /* MIDNIGHT OBSIDIAN & CHAMPAGNE GOLD (Swiss Banking / Robinhood Gold) */
   /* ========================================================= */
-  --bg-primary: #f8fafc;        /* Crisp Slate 50 backdrop */
-  --bg-card: #ffffff;           /* Clean pure white surfaces */
-  --bg-card-hover: #f1f5f9;     /* Slate 100 */
-  --bg-card-secondary: #f8fafc; /* Slate 50 */
-  --bg-input: #ffffff;          /* Pure white inputs */
+  --bg-primary: #0c0e14;        /* Deep matte velvet obsidian */
+  --bg-card: #131722;           /* Rich matte dark charcoal surface */
+  --bg-card-hover: #181d2b;     /* Refined elevation on hover */
+  --bg-card-secondary: #161b29; /* Structured secondary panels */
+  --bg-input: #0e111a;          /* Recessed matte dark inputs */
   
-  --border-color: #e2e8f0;       /* Slate 200 crisp hairline borders */
-  --border-subtle: #f1f5f9;      /* Slate 100 */
-  --border-highlight: #cbd5e1;   /* Slate 300 active/focus state */
+  --border-color: #212638;       /* Subtle hairline border */
+  --border-subtle: #191d2c;      /* Fine table divider */
+  --border-highlight: #343d56;   /* Active / focused stroke */
   
-  --text-primary: #0f172a;       /* Slate 900 authoritative dark navy */
-  --text-secondary: #475569;     /* Slate 600 quiet, readable body */
-  --text-muted: #94a3b8;         /* Slate 400 captions & labels */
+  --text-primary: #f8fafc;       /* Crisp bone white */
+  --text-secondary: #9aa4b8;     /* Calm platinum slate */
+  --text-muted: #647087;         /* Subtle steel for captions */
   
-  /* Primary Brand: Forest Emerald (Solid & Authoritative) */
-  --brand-primary: #059669;      /* Emerald 600 */
-  --brand-primary-hover: #047857;/* Emerald 700 */
-  --brand-primary-dark: #065f46; /* Emerald 800 */
-  --brand-subtle: #ecfdf5;       /* Emerald 50 */
-  --brand-border: #a7f3d0;       /* Emerald 200 */
-  --brand-contrast-text: #ffffff;/* White text on emerald */
+  /* Primary Brand: Champagne Gold (Swiss Private Banking) */
+  --brand-primary: #e5c07b;      /* Champagne Gold */
+  --brand-primary-hover: #d8b268;/* Warm burnished gold */
+  --brand-primary-dark: #b89345; /* Deep antique gold */
+  --brand-subtle: rgba(229, 192, 123, 0.08); /* Delicate gold wash */
+  --brand-border: rgba(229, 192, 123, 0.28); /* Gold hairline border */
+  --brand-contrast-text: #0c0e14;/* Crisp dark obsidian text on gold buttons */
   
-  /* Semantic Accents */
-  --accent-income: #059669;
-  --accent-income-subtle: #ecfdf5;
-  --accent-expense: #e11d48;
-  --accent-expense-subtle: #fff1f2;
-  --accent-warning: #d97706;
-  --accent-warning-subtle: #fffbeb;
-  --accent-info: #0284c7;
-  --accent-info-subtle: #f0f9ff;
+  /* Financial Precision Metrics */
+  --accent-income: #10b981;      /* Crisp emerald inflow */
+  --accent-income-subtle: rgba(16, 185, 129, 0.12);
+  --accent-expense: #f43f5e;     /* Crimson outflow */
+  --accent-expense-subtle: rgba(244, 63, 94, 0.12);
+  --accent-warning: #e5c07b;     /* Champagne gold highlight */
+  --accent-warning-subtle: rgba(229, 192, 123, 0.12);
+  --accent-info: #38bdf8;        /* Sky blue reference */
+  --accent-info-subtle: rgba(56, 189, 248, 0.12);
 
   /* Typography Scale */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -49,9 +49,9 @@
   --space-8: 2rem;     /* 32px */
   --space-10: 2.5rem;  /* 40px */
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
   
   --radius-lg: 10px;
   --radius-md: 7px;
@@ -133,7 +133,7 @@ p, .body-text {
   text-align: left;
 }
 
-/* Clean Fintech Navbar */
+/* Midnight Luxury Navbar */
 .navbar {
   display: flex;
   align-items: center;
@@ -178,11 +178,11 @@ p, .body-text {
 
 .brand-badge {
   font-size: 0.6875rem;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: var(--radius-sm);
-  background: var(--bg-card-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--brand-subtle);
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-border);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -193,10 +193,10 @@ p, .body-text {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  background: var(--bg-card-secondary);
+  background: var(--bg-primary);
   padding: 4px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-subtle);
   overflow-x: auto;
   max-width: 100%;
 }
@@ -220,13 +220,13 @@ p, .body-text {
 
 .nav-btn:hover {
   color: var(--text-primary);
-  background: var(--bg-card-hover);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .nav-btn.active {
-  color: var(--text-primary);
-  background: var(--bg-card);
-  border-color: var(--border-highlight);
+  color: #ffffff;
+  background: var(--bg-card-secondary);
+  border-color: var(--brand-border);
   box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
@@ -243,13 +243,12 @@ p, .body-text {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--bg-card);
+  background: var(--bg-card-secondary);
   border: 1px solid var(--border-color);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.8125rem;
-  box-shadow: var(--shadow-sm);
 }
 
 .month-picker-container input[type="month"] {
@@ -260,7 +259,7 @@ p, .body-text {
   font-size: 0.8125rem;
   outline: none;
   cursor: pointer;
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 /* Buttons */
@@ -285,18 +284,18 @@ p, .body-text {
   background: var(--brand-primary);
   color: var(--brand-contrast-text);
   border-color: var(--brand-primary-hover);
-  box-shadow: 0 1px 2px 0 rgba(5, 150, 105, 0.2);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(229, 192, 123, 0.25);
 }
 
 .btn-primary:hover {
-  background: var(--brand-primary-hover);
+  background: #edd39b;
 }
 
 .btn-secondary {
-  background: var(--bg-card);
+  background: var(--bg-card-secondary);
   color: var(--text-primary);
   border-color: var(--border-color);
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
@@ -306,13 +305,13 @@ p, .body-text {
 
 .btn-danger {
   background: var(--accent-expense-subtle);
-  color: var(--accent-expense);
-  border-color: #fecdd3;
+  color: #fda4af;
+  border-color: rgba(244, 63, 94, 0.3);
 }
 
 .btn-danger:hover {
-  background: #ffe4e6;
-  border-color: #fda4af;
+  background: rgba(244, 63, 94, 0.22);
+  border-color: rgba(244, 63, 94, 0.5);
 }
 
 .btn-sm {
@@ -409,25 +408,25 @@ p, .body-text {
 .badge-emerald {
   background: var(--accent-income-subtle);
   color: var(--accent-income);
-  border: 1px solid var(--brand-border);
+  border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
 .badge-rose {
   background: var(--accent-expense-subtle);
   color: var(--accent-expense);
-  border: 1px solid #fecdd3;
+  border: 1px solid rgba(244, 63, 94, 0.28);
 }
 
 .badge-amber {
   background: var(--accent-warning-subtle);
   color: var(--accent-warning);
-  border: 1px solid #fde68a;
+  border: 1px solid var(--brand-border);
 }
 
 .badge-cyan {
   background: var(--accent-info-subtle);
   color: var(--accent-info);
-  border: 1px solid #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.28);
 }
 
 /* Charts Grid */
@@ -485,7 +484,7 @@ p, .body-text {
 .progress-track {
   width: 100%;
   height: 6px;
-  background: var(--border-subtle);
+  background: var(--bg-primary);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -496,11 +495,11 @@ p, .body-text {
   transition: width 0.3s ease;
 }
 
-/* Clean Financial Ledger Table */
+/* Financial Ledger Table */
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-subtle);
   background: var(--bg-card);
 }
 
@@ -512,7 +511,7 @@ table {
 
 th {
   background: var(--bg-card-secondary);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -531,7 +530,7 @@ td {
 }
 
 tr:hover td {
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .amount-income {
@@ -577,7 +576,7 @@ tr:hover td {
 }
 
 .select-filter {
-  background: var(--bg-card);
+  background: var(--bg-card-secondary);
   border: 1px solid var(--border-color);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
@@ -615,8 +614,8 @@ tr:hover td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
+  background: rgba(8, 10, 15, 0.8);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -626,7 +625,7 @@ tr:hover td {
 
 .modal-content {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-highlight);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 520px;
@@ -670,7 +669,7 @@ tr:hover td {
 
 .modal-close:hover {
   color: var(--text-primary);
-  background: var(--bg-card-hover);
+  background: var(--bg-card-secondary);
 }
 
 .modal-body {
@@ -698,7 +697,7 @@ tr:hover td {
 
 .form-input, .form-select, .form-textarea {
   background: var(--bg-input);
-  border: 1px solid var(--border-highlight);
+  border: 1px solid var(--border-color);
   padding: 0.55rem var(--space-3);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -754,10 +753,10 @@ tr:hover td {
   gap: var(--space-3);
 }
 
-/* Edge-Aligned File Upload Zone (Clean Minimalist) */
+/* Edge-Aligned File Upload Zone (Midnight Minimalist) */
 .upload-drop-zone {
   border: 1px dashed var(--border-highlight);
-  background: var(--bg-card-secondary);
+  background: var(--bg-input);
   border-radius: var(--radius-md);
   padding: var(--space-5);
   text-align: left;
@@ -851,7 +850,7 @@ tr:hover td {
   padding: var(--space-8) var(--space-6);
   border: 1px dashed var(--border-highlight);
   border-radius: var(--radius-lg);
-  background: var(--bg-card-secondary);
+  background: var(--bg-input);
   display: flex;
   align-items: flex-start;
   gap: var(--space-5);
@@ -862,7 +861,7 @@ tr:hover td {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
-  background: var(--bg-card);
+  background: var(--bg-card-secondary);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -895,8 +894,8 @@ tr:hover td {
 
 /* Skeleton Loading State */
 @keyframes skeletonPulse {
-  0%, 100% { opacity: 0.4; background-color: #e2e8f0; }
-  50% { opacity: 0.8; background-color: #cbd5e1; }
+  0%, 100% { opacity: 0.35; background-color: #1a2030; }
+  50% { opacity: 0.75; background-color: #273047; }
 }
 
 .skeleton-row {
@@ -908,7 +907,7 @@ tr:hover td {
 }
 
 .skeleton-box {
-  background: #e2e8f0;
+  background: #1a2030;
   border-radius: var(--radius-sm);
   animation: skeletonPulse 1.6s ease-in-out infinite;
 }
@@ -970,7 +969,7 @@ tr:hover td {
 }
 
 /* ========================================================= */
-/* AUTHENTICATION: Clean, Edge-Aligned Fintech Layout */
+/* AUTHENTICATION: Midnight Obsidian & Gold */
 /* ========================================================= */
 .auth-wrapper {
   min-height: 100vh;
@@ -1023,8 +1022,8 @@ tr:hover td {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: var(--bg-card-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   padding: 4px;
   border-radius: var(--radius-md);
 }
@@ -1043,9 +1042,9 @@ tr:hover td {
 }
 
 .auth-tab-btn.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-color: var(--border-highlight);
+  background: var(--bg-card-secondary);
+  color: var(--brand-primary);
+  border-color: var(--brand-border);
   box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
