@@ -18,7 +18,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
+  AlertCircle,
   CreditCard,
   Edit2,
   FileText,
@@ -42,7 +42,12 @@ import {
   Mail,
   User,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Briefcase,
+  ShoppingBag,
+  Utensils,
+  Car,
+  Tag
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -304,22 +309,30 @@ export default function App() {
     }
   };
 
-  // Icon mapping
+  // Icon mapping with consistent size and stroke width
   const renderIcon = (iconName, size = 16) => {
+    const props = { size, strokeWidth: 1.75 };
     switch (iconName) {
-      case 'ShieldCheck': return <ShieldCheck size={size} />;
-      case 'Laptop': return <Laptop size={size} />;
-      case 'Plane': return <Plane size={size} />;
-      case 'HeartPulse': return <HeartPulse size={size} />;
-      case 'Home': return <Home size={size} />;
-      case 'Wifi': return <Wifi size={size} />;
-      case 'Dumbbell': return <Dumbbell size={size} />;
-      case 'Film': return <Film size={size} />;
-      case 'Music': return <Music size={size} />;
-      case 'Code': return <Code size={size} />;
-      case 'Zap': return <Zap size={size} />;
-      case 'PiggyBank': return <PiggyBank size={size} />;
-      default: return <Target size={size} />;
+      case 'Briefcase': return <Briefcase {...props} />;
+      case 'ShoppingBag': return <ShoppingBag {...props} />;
+      case 'Utensils': return <Utensils {...props} />;
+      case 'Car': return <Car {...props} />;
+      case 'ShieldCheck': return <ShieldCheck {...props} />;
+      case 'Laptop': return <Laptop {...props} />;
+      case 'Plane': return <Plane {...props} />;
+      case 'HeartPulse': return <HeartPulse {...props} />;
+      case 'Home': return <Home {...props} />;
+      case 'Wifi': return <Wifi {...props} />;
+      case 'Dumbbell': return <Dumbbell {...props} />;
+      case 'Film': return <Film {...props} />;
+      case 'Music': return <Music {...props} />;
+      case 'Code': return <Code {...props} />;
+      case 'Zap': return <Zap {...props} />;
+      case 'PiggyBank': return <PiggyBank {...props} />;
+      case 'CreditCard': return <CreditCard {...props} />;
+      case 'TrendingUp': return <TrendingUp {...props} />;
+      case 'Target': return <Target {...props} />;
+      default: return <Tag {...props} />;
     }
   };
 
@@ -845,150 +858,157 @@ export default function App() {
   // =========================================================
   if (!token || !currentUser) {
     return (
-      <>
-        <div className="bg-subtle-grid" />
-        <div className="auth-wrapper">
-          <div className="auth-card">
-            <div className="auth-header">
-              <div className="auth-logo-box">
-                <Sparkles size={24} />
-              </div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700 }}>
-                FinPulse
-              </h1>
-              <p style={{ fontSize: '0.825rem', color: '#94a3b8' }}>
-                Your personal, private, and intelligent financial operating system.
-              </p>
+      <div className="auth-wrapper">
+        <div className="auth-card">
+          <div className="auth-header">
+            <div className="auth-logo-box">
+              <Wallet size={20} strokeWidth={1.75} />
             </div>
+            <h1 className="heading-xl">
+              {authMode === 'login' ? 'Sign in to FinPulse' : 'Create your account'}
+            </h1>
+            <p className="body-quiet">
+              {authMode === 'login'
+                ? 'Access your personal ledger, active budgets, and net worth tracker.'
+                : 'Start tracking income, expenses, and savings with your own private ledger.'}
+            </p>
+          </div>
 
-            {/* Quick Demo Access Bar */}
-            <div className="demo-login-box">
-              <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981' }}>Want a quick test drive?</div>
-                <div style={{ fontSize: '0.725rem', color: '#94a3b8' }}>Instant demo account with pre-filled mock data</div>
+          {/* Quick Demo Access Bar */}
+          <div className="demo-login-box">
+            <div>
+              <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--brand-primary)' }}>
+                Demo Ledger Available
               </div>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={handleDemoLogin}
-                disabled={authLoading}
-              >
-                1-Click Demo &rarr;
-              </button>
-            </div>
-
-            {/* Auth Switcher Tabs */}
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={`auth-tab-btn ${authMode === 'login' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('login'); setAuthError(''); }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('register'); setAuthError(''); }}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {authError && (
-              <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#fda4af', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <AlertTriangle size={15} />
-                <span>{authError}</span>
+              <div className="caption" style={{ color: 'var(--text-secondary)' }}>
+                Explore with sample transactions, goals, and receipts.
               </div>
-            )}
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleDemoLogin}
+              disabled={authLoading}
+            >
+              Explore Demo Ledger
+            </button>
+          </div>
 
-            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
-              {authMode === 'register' && (
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Arjun Makkar"
-                      className="form-input"
-                      style={{ paddingLeft: '2.1rem', width: '100%' }}
-                      value={authForm.name}
-                      onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
+          {/* Auth Switcher Tabs */}
+          <div className="auth-tabs">
+            <button
+              type="button"
+              className={`auth-tab-btn ${authMode === 'login' ? 'active' : ''}`}
+              onClick={() => { setAuthMode('login'); setAuthError(''); }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
+              onClick={() => { setAuthMode('register'); setAuthError(''); }}
+            >
+              Create Account
+            </button>
+          </div>
 
+          {authError && (
+            <div style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.25)', padding: '0.65rem 0.85rem', borderRadius: '8px', color: '#fda4af', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={16} strokeWidth={1.75} />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {authMode === 'register' && (
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label">Full Name</label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <User size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="name@example.com"
+                    placeholder="e.g. Alex Morgan"
                     className="form-input"
                     style={{ paddingLeft: '2.1rem', width: '100%' }}
-                    value={authForm.email}
-                    onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                    value={authForm.name}
+                    onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
                   />
                 </div>
               </div>
+            )}
 
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. alex@example.com"
+                  className="form-input"
+                  style={{ paddingLeft: '2.1rem', width: '100%' }}
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="At least 6 characters"
+                  className="form-input"
+                  style={{ paddingLeft: '2.1rem', width: '100%' }}
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {authMode === 'register' && (
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label className="form-label">Confirm Password</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                  <Lock size={15} strokeWidth={1.75} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
                   <input
                     type="password"
                     required
                     minLength={6}
-                    placeholder="At least 6 characters"
+                    placeholder="Repeat password"
                     className="form-input"
                     style={{ paddingLeft: '2.1rem', width: '100%' }}
-                    value={authForm.password}
-                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                    value={authForm.confirmPassword}
+                    onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })}
                   />
                 </div>
               </div>
+            )}
 
-              {authMode === 'register' && (
-                <div className="form-group">
-                  <label className="form-label">Confirm Password</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                    <input
-                      type="password"
-                      required
-                      minLength={6}
-                      placeholder="Repeat password"
-                      className="form-input"
-                      style={{ paddingLeft: '2.1rem', width: '100%' }}
-                      value={authForm.confirmPassword}
-                      onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: '0.25rem', padding: '0.65rem' }}
+              disabled={authLoading}
+            >
+              {authLoading
+                ? 'Authenticating...'
+                : authMode === 'login'
+                ? 'Sign In to Your Account'
+                : 'Create Your Personal Account'}
+            </button>
+          </form>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', marginTop: '0.4rem', padding: '0.65rem' }}
-                disabled={authLoading}
-              >
-                {authLoading ? 'Authenticating...' : authMode === 'login' ? 'Sign In to FinPulse' : 'Create My Personal Vault'}
-              </button>
-            </form>
-
-            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
-              Protected by isolated per-user tenancy & zero telemetry.
-            </div>
+          <div className="caption" style={{ color: 'var(--text-muted)' }}>
+            Your account data is isolated and kept strictly private to your user ID.
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -1000,114 +1020,112 @@ export default function App() {
     : 'U';
 
   return (
-    <>
-      <div className="bg-subtle-grid" />
-      <div className="app-container">
-        {/* Navigation Bar */}
-        <header className="navbar">
-          <div className="brand">
-            <div className="brand-icon">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="brand-title">FinPulse</span>
-                <span className="brand-badge">Financial OS</span>
-              </div>
+    <div className="app-container">
+      {/* Navigation Bar */}
+      <header className="navbar">
+        <div className="brand">
+          <div className="brand-icon">
+            <Wallet size={18} strokeWidth={1.75} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="brand-title">FinPulse</span>
+              <span className="brand-badge">Financial OS</span>
             </div>
           </div>
+        </div>
 
-          <nav className="nav-links">
-            <button
-              className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              <BarChart3 size={15} /> Dashboard
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'transactions' ? 'active' : ''}`}
-              onClick={() => setActiveTab('transactions')}
-            >
-              <CreditCard size={15} /> Ledger
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'budgets' ? 'active' : ''}`}
-              onClick={() => setActiveTab('budgets')}
-            >
-              <PiggyBank size={15} /> Budgets
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'goals' ? 'active' : ''}`}
-              onClick={() => setActiveTab('goals')}
-            >
-              <Target size={15} /> Savings Vaults
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'subscriptions' ? 'active' : ''}`}
-              onClick={() => setActiveTab('subscriptions')}
-            >
-              <Calendar size={15} /> Bill Calendar
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'simulator' ? 'active' : ''}`}
-              onClick={() => setActiveTab('simulator')}
-            >
-              <TrendingUp size={15} /> Wealth Simulator
-            </button>
-            <button
-              className={`nav-btn ${activeTab === 'statements' ? 'active' : ''}`}
-              onClick={() => setActiveTab('statements')}
-            >
-              <FileText size={15} /> Statements & CSV
-            </button>
-          </nav>
+        <nav className="nav-links">
+          <button
+            className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <BarChart3 size={15} strokeWidth={1.75} /> Dashboard
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'transactions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('transactions')}
+          >
+            <CreditCard size={15} strokeWidth={1.75} /> Ledger
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'budgets' ? 'active' : ''}`}
+            onClick={() => setActiveTab('budgets')}
+          >
+            <PiggyBank size={15} strokeWidth={1.75} /> Budgets
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'goals' ? 'active' : ''}`}
+            onClick={() => setActiveTab('goals')}
+          >
+            <Target size={15} strokeWidth={1.75} /> Savings Vaults
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'subscriptions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('subscriptions')}
+          >
+            <Calendar size={15} strokeWidth={1.75} /> Bill Calendar
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'simulator' ? 'active' : ''}`}
+            onClick={() => setActiveTab('simulator')}
+          >
+            <TrendingUp size={15} strokeWidth={1.75} /> Wealth Simulator
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'statements' ? 'active' : ''}`}
+            onClick={() => setActiveTab('statements')}
+          >
+            <FileText size={15} strokeWidth={1.75} /> Statements & CSV
+          </button>
+        </nav>
 
-          <div className="nav-actions">
-            <div className="month-picker-container">
-              <Calendar size={14} style={{ color: '#94a3b8' }} />
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              />
+        <div className="nav-actions">
+          <div className="month-picker-container">
+            <Calendar size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            />
+          </div>
+
+          {/* Currency Switcher */}
+          <select
+            className="select-filter"
+            style={{ padding: '0.35rem 0.55rem', fontSize: '0.8rem' }}
+            value={currentUser?.currency || 'INR'}
+            onChange={(e) => handleCurrencyChange(e.target.value)}
+            title="Change Account Currency"
+          >
+            <option value="INR">₹ INR</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+            <option value="GBP">£ GBP</option>
+          </select>
+
+          {/* User Profile Pill & Logout */}
+          <div className="user-profile-menu">
+            <div className="user-avatar">{initials}</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.785rem', fontWeight: 600, lineHeight: 1.2 }}>{currentUser?.name}</span>
+              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)', lineHeight: 1.1 }}>{currentUser?.email}</span>
             </div>
-
-            {/* Currency Switcher */}
-            <select
-              className="select-filter"
-              style={{ padding: '0.35rem 0.55rem', fontSize: '0.8rem' }}
-              value={currentUser?.currency || 'INR'}
-              onChange={(e) => handleCurrencyChange(e.target.value)}
-              title="Change Account Currency"
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '0.2rem 0.45rem', marginLeft: '0.25rem' }}
+              onClick={handleLogout}
+              title="Sign Out of Account"
             >
-              <option value="INR">₹ INR</option>
-              <option value="USD">$ USD</option>
-              <option value="EUR">€ EUR</option>
-              <option value="GBP">£ GBP</option>
-            </select>
-
-            {/* User Profile Pill & Logout */}
-            <div className="user-profile-menu">
-              <div className="user-avatar">{initials}</div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.785rem', fontWeight: 600, lineHeight: 1.2 }}>{currentUser?.name}</span>
-                <span style={{ fontSize: '0.675rem', color: '#94a3b8', lineHeight: 1.1 }}>{currentUser?.email}</span>
-              </div>
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ padding: '0.2rem 0.45rem', marginLeft: '0.25rem' }}
-                onClick={handleLogout}
-                title="Sign Out"
-              >
-                <LogOut size={12} />
-              </button>
-            </div>
-
-            <button className="btn btn-primary" onClick={() => setIsAddTxOpen(true)}>
-              <Plus size={15} /> Add Entry
+              <LogOut size={12} strokeWidth={1.75} />
             </button>
           </div>
-        </header>
+
+          <button className="btn btn-primary" onClick={() => setIsAddTxOpen(true)}>
+            <Plus size={15} strokeWidth={1.75} /> Record Transaction
+          </button>
+        </div>
+      </header>
 
         {/* Global Key Metrics Header */}
         <section className="metrics-grid">
@@ -1184,15 +1202,15 @@ export default function App() {
               <div className="panel-card">
                 <div className="panel-header">
                   <div className="panel-title">
-                    <BarChart3 size={17} style={{ color: '#6366f1' }} />
+                    <BarChart3 size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Month-over-Month Cash Flow ({selectedMonth.split('-')[0]})
                   </div>
                   <div className="panel-actions">
                     <button className="btn btn-secondary btn-sm" onClick={handleProcessRecurring} title="Execute scheduled bills">
-                      <RefreshCw size={13} /> Run Recurring
+                      <RefreshCw size={13} strokeWidth={1.75} /> Process Recurring Bills
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => setIsStatementModalOpen(true)}>
-                      <Printer size={13} /> Print Statement
+                      <Printer size={13} strokeWidth={1.75} /> Statement PDF
                     </button>
                   </div>
                 </div>
@@ -1201,14 +1219,14 @@ export default function App() {
                   <ResponsiveContainer>
                     <BarChart data={monthlyTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
-                      <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
+                      <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                      <YAxis stroke="#64748b" tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${v/1000}k`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#131722',
-                          borderColor: '#21283b',
+                          backgroundColor: '#111827',
+                          borderColor: '#1f293d',
                           borderRadius: '8px',
-                          color: '#f8fafc',
+                          color: '#f9fafb',
                         }}
                         formatter={(val) => [formatMoney(val), '']}
                       />
@@ -1224,14 +1242,22 @@ export default function App() {
               <div className="panel-card">
                 <div className="panel-header">
                   <div className="panel-title">
-                    <PieChartIcon size={17} style={{ color: '#10b981' }} />
+                    <PieChartIcon size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Expense Distribution
                   </div>
                 </div>
 
                 {categoryReport.categories.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>
-                    No recorded expenses for {selectedMonth}
+                  <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1.5rem 0' }}>
+                    <div className="empty-state-icon">
+                      <PieChartIcon size={20} strokeWidth={1.75} />
+                    </div>
+                    <div className="empty-state-content">
+                      <div className="empty-state-title">No expenses recorded yet</div>
+                      <p className="empty-state-desc">
+                        As you log expense entries for {selectedMonth}, this chart will display spending breakdown by category.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -1249,13 +1275,13 @@ export default function App() {
                             paddingAngle={3}
                           >
                             {categoryReport.categories.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color || '#6366f1'} />
+                              <Cell key={`cell-${index}`} fill={entry.color || '#10b981'} />
                             ))}
                           </Pie>
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: '#131722',
-                              borderColor: '#21283b',
+                              backgroundColor: '#111827',
+                              borderColor: '#1f293d',
                               borderRadius: '8px',
                               color: '#fff',
                             }}
@@ -1274,7 +1300,7 @@ export default function App() {
                                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color }} />
                                 {c.categoryName}
                               </span>
-                              <span style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
                                 {formatMoney(c.total)} ({c.percentage}%)
                               </span>
                             </div>
@@ -1291,37 +1317,43 @@ export default function App() {
             </div>
 
             {/* Quick Glance at Active Vaults & Upcoming Bills */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
               {/* Top Savings Vaults */}
               <div className="panel-card">
                 <div className="panel-header">
                   <div className="panel-title">
-                    <Target size={16} style={{ color: '#06b6d4' }} />
+                    <Target size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Active Savings Vaults
                   </div>
                   <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('goals')}>
-                    View All &rarr;
+                    View All Vaults &rarr;
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {goals.length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '1rem 0', textAlign: 'center' }}>
-                      No active vaults yet. Click to create your first savings goal!
+                    <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1rem 0' }}>
+                      <div className="empty-state-icon">
+                        <Target size={20} strokeWidth={1.75} />
+                      </div>
+                      <div className="empty-state-content">
+                        <div className="empty-state-title">No savings vaults created yet</div>
+                        <p className="empty-state-desc">Open a vault to track progress toward a specific financial milestone.</p>
+                      </div>
                     </div>
                   ) : (
                     goals.slice(0, 3).map((g) => {
                       const pct = Math.min(100, Math.round((g.savedAmount / g.targetAmount) * 100));
                       return (
-                        <div key={g.id} style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem 0.95rem', borderRadius: '8px' }}>
+                        <div key={g.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.75rem 0.95rem', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
                             <span style={{ fontWeight: 600 }}>{g.title}</span>
-                            <span style={{ color: '#10b981', fontFamily: 'var(--font-mono)' }}>{pct}%</span>
+                            <span style={{ color: 'var(--brand-primary)', fontFamily: 'var(--font-mono)' }}>{pct}%</span>
                           </div>
                           <div className="progress-track" style={{ height: '6px', marginBottom: '0.4rem' }}>
-                            <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || '#10b981' }} />
+                            <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || 'var(--brand-primary)' }} />
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                             <span>Saved: {formatMoney(g.savedAmount)}</span>
                             <span>Target: {formatMoney(g.targetAmount)}</span>
                           </div>
@@ -1336,7 +1368,7 @@ export default function App() {
               <div className="panel-card">
                 <div className="panel-header">
                   <div className="panel-title">
-                    <Calendar size={16} style={{ color: '#f59e0b' }} />
+                    <Calendar size={18} strokeWidth={1.75} style={{ color: 'var(--accent-warning)' }} />
                     Upcoming Bills & Subscriptions
                   </div>
                   <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('subscriptions')}>
@@ -1344,23 +1376,29 @@ export default function App() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {subscriptions.length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', padding: '1rem 0', textAlign: 'center' }}>
-                      No tracked subscriptions. Add a recurring bill to see it here!
+                    <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1rem 0' }}>
+                      <div className="empty-state-icon">
+                        <Calendar size={20} strokeWidth={1.75} />
+                      </div>
+                      <div className="empty-state-content">
+                        <div className="empty-state-title">No recurring bills tracked</div>
+                        <p className="empty-state-desc">Add recurring bills to keep track of upcoming payment dates.</p>
+                      </div>
                     </div>
                   ) : (
                     subscriptions.slice(0, 3).map((s) => {
                       const isPaid = s.paidMonths?.includes(selectedMonth);
                       return (
-                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0e111a', border: '1px solid #21283b', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <span style={{ background: '#1c2233', width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
+                            <span style={{ background: 'var(--bg-card-secondary)', width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color || 'var(--brand-primary)' }}>
                               {renderIcon(s.icon, 14)}
                             </span>
                             <div>
                               <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{s.name}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Due on Day {s.dueDay} of month</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Due on Day {s.dueDay} of month</div>
                             </div>
                           </div>
 
@@ -1370,7 +1408,7 @@ export default function App() {
                               <span className="badge-tag badge-emerald" style={{ fontSize: '0.685rem' }}>Paid</span>
                             ) : (
                               <button className="btn btn-secondary btn-sm" style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', marginTop: '0.15rem' }} onClick={() => handlePaySubscription(s)}>
-                                Pay Now
+                                Record Payment
                               </button>
                             )}
                           </div>
@@ -1386,7 +1424,7 @@ export default function App() {
             <div className="panel-card">
               <div className="panel-header">
                 <div className="panel-title">
-                  <CreditCard size={17} style={{ color: '#06b6d4' }} />
+                  <CreditCard size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                   Recent Ledger Entries
                 </div>
                 <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('transactions')}>
@@ -1409,56 +1447,75 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.slice(0, 5).map((t) => (
-                      <tr key={t.id}>
-                        <td style={{ color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>{t.date}</td>
-                        <td><strong>{t.categoryName}</strong></td>
-                        <td>
-                          {t.note || '—'}
-                          {t.isRecurring && (
-                            <span className="badge-tag badge-amber" style={{ marginLeft: '0.4rem' }}>Recurring</span>
-                          )}
-                        </td>
-                        <td>
-                          <span style={{ background: '#1c2233', padding: '0.15rem 0.45rem', borderRadius: 4, fontSize: '0.75rem' }}>
-                            {t.paymentMode}
-                          </span>
-                        </td>
-                        <td>
-                          {t.receiptUrl ? (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', gap: '0.25rem' }}
-                              onClick={() => setInspectReceipt(t)}
-                            >
-                              <Eye size={12} /> View
-                            </button>
-                          ) : (
-                            <span style={{ color: '#475569', fontSize: '0.75rem' }}>None</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`badge-tag ${t.type === 'income' ? 'badge-emerald' : 'badge-rose'}`}>
-                            {t.type.toUpperCase()}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <span className={t.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                            {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button
-                            className="btn btn-danger btn-sm"
-                            style={{ padding: '0.25rem 0.45rem' }}
-                            onClick={() => handleDeleteTransaction(t.id)}
-                            title="Delete"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                    {transactions.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" style={{ padding: 'var(--space-6)' }}>
+                          <div className="empty-state-card" style={{ border: 'none', background: 'transparent', padding: '1rem 0' }}>
+                            <div className="empty-state-icon">
+                              <FileText size={20} strokeWidth={1.75} />
+                            </div>
+                            <div className="empty-state-content">
+                              <div className="empty-state-title">No transactions recorded yet</div>
+                              <p className="empty-state-desc">Your latest entries will appear here once you record your first income or expense.</p>
+                              <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', marginTop: '0.25rem' }} onClick={() => setIsAddTxOpen(true)}>
+                                <Plus size={14} strokeWidth={1.75} /> Record First Transaction
+                              </button>
+                            </div>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      transactions.slice(0, 5).map((t) => (
+                        <tr key={t.id}>
+                          <td style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{t.date}</td>
+                          <td><strong>{t.categoryName}</strong></td>
+                          <td>
+                            {t.note || '—'}
+                            {t.isRecurring && (
+                              <span className="badge-tag badge-amber" style={{ marginLeft: '0.4rem' }}>Recurring</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ background: 'var(--bg-card-secondary)', padding: '0.15rem 0.45rem', borderRadius: 4, fontSize: '0.75rem' }}>
+                              {t.paymentMode}
+                            </span>
+                          </td>
+                          <td>
+                            {t.receiptUrl ? (
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', gap: '0.25rem' }}
+                                onClick={() => setInspectReceipt(t)}
+                              >
+                                <Eye size={12} strokeWidth={1.75} /> View
+                              </button>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>None</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className={`badge-tag ${t.type === 'income' ? 'badge-emerald' : 'badge-rose'}`}>
+                              {t.type.toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <span className={t.type === 'income' ? 'amount-income' : 'amount-expense'}>
+                              {t.type === 'income' ? '+' : '-'}{formatMoney(t.amount)}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              style={{ padding: '0.25rem 0.45rem' }}
+                              onClick={() => handleDeleteTransaction(t.id)}
+                              title="Delete transaction"
+                            >
+                              <Trash2 size={12} strokeWidth={1.75} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1472,19 +1529,24 @@ export default function App() {
         {activeTab === 'transactions' && (
           <div className="panel-card">
             <div className="panel-header">
-              <div className="panel-title">
-                <CreditCard size={17} style={{ color: '#6366f1' }} />
-                Personal Financial Ledger
+              <div>
+                <div className="panel-title">
+                  <CreditCard size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
+                  Personal Financial Ledger
+                </div>
+                <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                  Chronological record of all income, expenses, and attached invoices.
+                </p>
               </div>
               <div className="panel-actions">
                 <button className="btn btn-secondary btn-sm" onClick={() => setIsStatementModalOpen(true)}>
-                  <Printer size={13} /> Printable Statement
+                  <Printer size={14} strokeWidth={1.75} /> Statement PDF
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleExportCSV}>
-                  <Download size={13} /> Export CSV
+                  <Download size={14} strokeWidth={1.75} /> Export CSV
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={() => setIsAddTxOpen(true)}>
-                  <Plus size={13} /> Add Entry
+                  <Plus size={14} strokeWidth={1.75} /> Record Transaction
                 </button>
               </div>
             </div>
@@ -1492,10 +1554,10 @@ export default function App() {
             {/* Filter Bar */}
             <div className="filter-bar">
               <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <Search size={15} strokeWidth={1.75} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  placeholder="Search notes, payment mode, or category..."
+                  placeholder="Filter by description, note, or payment mode..."
                   className="search-input"
                   style={{ paddingLeft: '2.2rem', width: '100%' }}
                   value={search}
@@ -1534,19 +1596,58 @@ export default function App() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '2rem' }}>Loading ledger records...</td>
-                    </tr>
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <tr key={`skel-${idx}`}>
+                        <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 110, height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 180, height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 60, height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 50, height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 65, height: 16 }} /></td>
+                        <td style={{ textAlign: 'right' }}><div className="skeleton-box" style={{ width: 70, height: 16, marginLeft: 'auto' }} /></td>
+                        <td style={{ textAlign: 'center' }}><div className="skeleton-box" style={{ width: 28, height: 28, borderRadius: 6, margin: '0 auto' }} /></td>
+                      </tr>
+                    ))
                   ) : transactions.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
-                        No transactions recorded. Click "Add Entry" to log your first transaction!
+                      <td colSpan="8" style={{ padding: 'var(--space-6)' }}>
+                        <div className="empty-state-card">
+                          <div className="empty-state-icon">
+                            <FileText size={22} strokeWidth={1.75} />
+                          </div>
+                          <div className="empty-state-content">
+                            <div className="empty-state-title">
+                              {search || typeFilter !== 'all' || categoryFilter !== 'all'
+                                ? 'No matching transactions found'
+                                : 'No transactions recorded for this period'}
+                            </div>
+                            <p className="empty-state-desc">
+                              {search || typeFilter !== 'all' || categoryFilter !== 'all'
+                                ? 'No records match your active search terms or filters. Try adjusting your filter parameters.'
+                                : 'Your ledger is currently empty. Record your first transaction or import a statement CSV to begin tracking cash flow.'}
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
+                              {(search || typeFilter !== 'all' || categoryFilter !== 'all') ? (
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => { setSearch(''); setTypeFilter('all'); setCategoryFilter('all'); }}
+                                >
+                                  Clear Filters
+                                </button>
+                              ) : (
+                                <button className="btn btn-primary btn-sm" onClick={() => setIsAddTxOpen(true)}>
+                                  <Plus size={14} strokeWidth={1.75} /> Record Transaction
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     transactions.map((t) => (
                       <tr key={t.id}>
-                        <td style={{ color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>{t.date}</td>
+                        <td style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{t.date}</td>
                         <td><strong>{t.categoryName}</strong></td>
                         <td>
                           {t.note || '—'}
@@ -1555,7 +1656,7 @@ export default function App() {
                           )}
                         </td>
                         <td>
-                          <span style={{ background: '#1c2233', padding: '0.15rem 0.45rem', borderRadius: 4, fontSize: '0.75rem' }}>
+                          <span style={{ background: 'var(--bg-card-secondary)', padding: '0.15rem 0.45rem', borderRadius: 4, fontSize: '0.75rem' }}>
                             {t.paymentMode}
                           </span>
                         </td>
@@ -1566,10 +1667,10 @@ export default function App() {
                               style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem', gap: '0.25rem' }}
                               onClick={() => setInspectReceipt(t)}
                             >
-                              <Eye size={12} /> {t.receiptName ? t.receiptName.slice(0, 12) + '...' : 'Attached'}
+                              <Eye size={12} strokeWidth={1.75} /> {t.receiptName ? t.receiptName.slice(0, 12) + '...' : 'Attached'}
                             </button>
                           ) : (
-                            <span style={{ color: '#475569', fontSize: '0.75rem' }}>None</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>None</span>
                           )}
                         </td>
                         <td>
@@ -1587,9 +1688,9 @@ export default function App() {
                             className="btn btn-danger btn-sm"
                             style={{ padding: '0.25rem 0.45rem' }}
                             onClick={() => handleDeleteTransaction(t.id)}
-                            title="Delete"
+                            title="Delete transaction"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={12} strokeWidth={1.75} />
                           </button>
                         </td>
                       </tr>
@@ -1610,14 +1711,14 @@ export default function App() {
                   disabled={pagination.page <= 1}
                   onClick={() => loadTransactions(pagination.page - 1)}
                 >
-                  <ChevronLeft size={13} /> Prev
+                  <ChevronLeft size={13} strokeWidth={1.75} /> Prev
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => loadTransactions(pagination.page + 1)}
                 >
-                  Next <ChevronRight size={13} />
+                  Next <ChevronRight size={13} strokeWidth={1.75} />
                 </button>
               </div>
             </div>
@@ -1629,21 +1730,21 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'budgets' && (
           <div>
-            <div className="panel-card" style={{ marginBottom: '1.25rem' }}>
+            <div className="panel-card" style={{ marginBottom: 'var(--space-5)' }}>
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <PiggyBank size={17} style={{ color: '#10b981' }} />
-                    Category Spending Caps & Real-Time Tracking ({selectedMonth})
+                    <PiggyBank size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
+                    Category Spending Limits & Real-Time Tracking ({selectedMonth})
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Calculated in real-time. Alerts trigger when you reach 80% or exceed limits.
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Track your current monthly expenses against spending targets. Alerts highlight categories nearing or exceeding limits.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 'var(--space-4)' }}>
               {budgets.map((b) => {
                 const isOver = b.status === 'exceeded';
                 const isWarn = b.status === 'warning';
@@ -1651,14 +1752,14 @@ export default function App() {
                 return (
                   <div key={b.id} className="panel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                           <span
                             style={{
                               width: '32px',
                               height: '32px',
-                              borderRadius: '8px',
-                              background: b.color || '#6366f1',
+                              borderRadius: 'var(--radius-md)',
+                              background: b.color || 'var(--brand-primary)',
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1671,39 +1772,41 @@ export default function App() {
                           </span>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{b.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cap: {b.budgetLimit > 0 ? formatMoney(b.budgetLimit) : 'None'}</div>
+                            <div className="caption" style={{ color: 'var(--text-secondary)' }}>
+                              Cap: {b.budgetLimit > 0 ? formatMoney(b.budgetLimit) : 'None set'}
+                            </div>
                           </div>
                         </div>
 
                         <div>
-                          {isOver && <span className="badge-tag badge-rose"><AlertTriangle size={11} style={{ marginRight: 3 }} /> Exceeded</span>}
-                          {isWarn && <span className="badge-tag badge-amber">Warning (80%+)</span>}
-                          {!isOver && !isWarn && <span className="badge-tag badge-emerald"><CheckCircle size={11} style={{ marginRight: 3 }} /> Safe</span>}
+                          {isOver && <span className="badge-tag badge-rose"><AlertTriangle size={11} strokeWidth={1.75} /> Exceeded</span>}
+                          {isWarn && <span className="badge-tag badge-amber"><AlertTriangle size={11} strokeWidth={1.75} /> Warning (80%+)</span>}
+                          {!isOver && !isWarn && <span className="badge-tag badge-emerald"><CheckCircle size={11} strokeWidth={1.75} /> Within Budget</span>}
                         </div>
                       </div>
 
-                      <div style={{ margin: '0.85rem 0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem', marginBottom: '0.3rem' }}>
-                          <span style={{ color: '#94a3b8' }}>Spent: {formatMoney(b.spent)}</span>
-                          <span style={{ fontWeight: 600, color: isOver ? '#f43f5e' : '#f8fafc' }}>{b.percentage}%</span>
+                      <div style={{ margin: 'var(--space-3) 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '0.3rem' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Spent: {formatMoney(b.spent)}</span>
+                          <span style={{ fontWeight: 600, color: isOver ? 'var(--accent-expense)' : 'var(--text-primary)' }}>{b.percentage}%</span>
                         </div>
-                        <div className="progress-track" style={{ height: '8px' }}>
+                        <div className="progress-track" style={{ height: '7px' }}>
                           <div
                             className="progress-bar"
                             style={{
                               width: `${Math.min(b.percentage, 100)}%`,
-                              background: isOver ? '#f43f5e' : isWarn ? '#f59e0b' : '#10b981',
+                              background: isOver ? 'var(--accent-expense)' : isWarn ? 'var(--accent-warning)' : 'var(--brand-primary)',
                             }}
                           />
                         </div>
                       </div>
 
-                      <div style={{ fontSize: '0.775rem', color: '#94a3b8' }}>
+                      <div className="caption" style={{ color: 'var(--text-secondary)' }}>
                         {b.budgetLimit > 0 ? (
                           isOver ? (
-                            <span style={{ color: '#f43f5e' }}>Exceeded by {formatMoney(b.spent - b.budgetLimit)}</span>
+                            <span style={{ color: 'var(--accent-expense)' }}>Exceeded by {formatMoney(b.spent - b.budgetLimit)}</span>
                           ) : (
-                            <span style={{ color: '#10b981' }}>{formatMoney(b.remaining)} remaining buffer</span>
+                            <span style={{ color: 'var(--brand-primary)' }}>{formatMoney(b.remaining)} remaining buffer</span>
                           )
                         ) : (
                           <span>No spending cap established</span>
@@ -1711,7 +1814,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '1rem', paddingTop: '0.65rem', borderTop: '1px solid #1f283b', display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
@@ -1719,7 +1822,7 @@ export default function App() {
                           setIsEditBudgetOpen(true);
                         }}
                       >
-                        <Edit2 size={11} /> Set Limit
+                        <Edit2 size={12} strokeWidth={1.75} /> Set Budget Cap
                       </button>
                     </div>
                   </div>
@@ -1734,111 +1837,128 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'goals' && (
           <div>
-            <div className="panel-card" style={{ marginBottom: '1.25rem' }}>
+            <div className="panel-card" style={{ marginBottom: 'var(--space-5)' }}>
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <Target size={17} style={{ color: '#10b981' }} />
+                    <Target size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Personal Savings Vaults & Targets
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Lock away savings for designated objectives. Track pace, projected timeline, and deposit/withdraw on demand.
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Dedicated savings accounts for specific financial milestones. Track pace, projected timeline, and deposit/withdraw funds.
                   </p>
                 </div>
                 <button className="btn btn-primary btn-sm" onClick={() => setIsAddGoalOpen(true)}>
-                  <Plus size={13} /> New Savings Vault
+                  <Plus size={14} strokeWidth={1.75} /> Create Savings Vault
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '1.25rem' }}>
-              {goals.map((g) => {
-                const pct = Math.min(100, Math.round(((g.savedAmount || 0) / g.targetAmount) * 100));
-                const remaining = Math.max(0, g.targetAmount - (g.savedAmount || 0));
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 'var(--space-5)' }}>
+              {goals.length === 0 ? (
+                <div className="empty-state-card" style={{ gridColumn: '1 / -1' }}>
+                  <div className="empty-state-icon">
+                    <Target size={22} strokeWidth={1.75} />
+                  </div>
+                  <div className="empty-state-content">
+                    <div className="empty-state-title">No savings vaults created yet</div>
+                    <p className="empty-state-desc">
+                      Create dedicated vaults to set aside funds for emergencies, travel, vehicle purchases, or investments.
+                    </p>
+                    <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', marginTop: '0.35rem' }} onClick={() => setIsAddGoalOpen(true)}>
+                      <Plus size={14} strokeWidth={1.75} /> Open First Savings Vault
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                goals.map((g) => {
+                  const pct = Math.min(100, Math.round(((g.savedAmount || 0) / g.targetAmount) * 100));
+                  const remaining = Math.max(0, g.targetAmount - (g.savedAmount || 0));
 
-                const targetD = new Date(g.targetDate);
-                const diffTime = targetD.getTime() - new Date().getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const monthsLeft = Math.max(1, Math.round(diffDays / 30.5));
-                const monthlyPace = remaining > 0 ? Math.round(remaining / monthsLeft) : 0;
+                  const targetD = new Date(g.targetDate);
+                  const diffTime = targetD.getTime() - new Date().getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  const monthsLeft = Math.max(1, Math.round(diffDays / 30.5));
+                  const monthlyPace = remaining > 0 ? Math.round(remaining / monthsLeft) : 0;
 
-                return (
-                  <div key={g.id} className="panel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <span style={{ width: 34, height: 34, borderRadius: 8, background: '#1c2233', display: 'flex', alignItems: 'center', justifyContent: 'center', color: g.color || '#10b981' }}>
-                            {renderIcon(g.icon, 18)}
-                          </span>
+                  return (
+                    <div key={g.id} className="panel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                            <span style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: 'var(--bg-input)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: g.color || 'var(--brand-primary)' }}>
+                              {renderIcon(g.icon, 18)}
+                            </span>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{g.title}</div>
+                              <div className="caption" style={{ color: 'var(--text-secondary)' }}>Target: {g.targetDate} ({diffDays > 0 ? `${diffDays} days left` : 'Due'})</div>
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '0.2rem 0.4rem' }}
+                            onClick={() => handleDeleteGoal(g.id)}
+                            title="Remove savings vault"
+                          >
+                            <Trash2 size={12} strokeWidth={1.75} />
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>{g.title}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Target: {g.targetDate} ({diffDays > 0 ? `${diffDays} days left` : 'Due'})</div>
+                            <div className="caption" style={{ color: 'var(--text-secondary)' }}>Saved Balance</div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--brand-primary)' }}>
+                              {formatMoney(g.savedAmount)}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div className="caption" style={{ color: 'var(--text-secondary)' }}>Target Goal</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {formatMoney(g.targetAmount)}
+                            </div>
                           </div>
                         </div>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          style={{ padding: '0.2rem 0.4rem' }}
-                          onClick={() => handleDeleteGoal(g.id)}
-                          title="Remove Goal"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                        <div>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Saved Balance</div>
-                          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 700, color: '#10b981' }}>
-                            {formatMoney(g.savedAmount)}
-                          </div>
+                        <div className="progress-track" style={{ height: '7px', marginBottom: 'var(--space-2)' }}>
+                          <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || 'var(--brand-primary)' }} />
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Target Cap</div>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 600, color: '#f8fafc' }}>
-                            {formatMoney(g.targetAmount)}
-                          </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.785rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
+                          <span>{pct}% funded</span>
+                          {remaining > 0 ? (
+                            <span>{formatMoney(monthlyPace)}/mo to stay on track</span>
+                          ) : (
+                            <span style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Goal Target Reached</span>
+                          )}
                         </div>
-                      </div>
 
-                      <div className="progress-track" style={{ height: '9px', marginBottom: '0.65rem' }}>
-                        <div className="progress-bar" style={{ width: `${pct}%`, background: g.color || '#10b981' }} />
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.785rem', color: '#94a3b8', marginBottom: '0.85rem' }}>
-                        <span>{pct}% funded</span>
-                        {remaining > 0 ? (
-                          <span>{formatMoney(monthlyPace)}/mo needed</span>
-                        ) : (
-                          <span style={{ color: '#10b981', fontWeight: 600 }}>Goal Complete! 🎉</span>
+                        {g.note && (
+                          <div className="caption" style={{ color: 'var(--text-secondary)', background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.5rem 0.65rem', borderRadius: 6 }}>
+                            "{g.note}"
+                          </div>
                         )}
                       </div>
 
-                      {g.note && (
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#0e111a', padding: '0.5rem 0.65rem', borderRadius: 6, fontStyle: 'italic' }}>
-                          "{g.note}"
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-color)' }}>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, justifyContent: 'center' }}
+                          onClick={() => setDepositModal({ open: true, goal: g, amount: '', type: 'withdraw', note: '' })}
+                        >
+                          Withdraw Funds
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 1, justifyContent: 'center' }}
+                          onClick={() => setDepositModal({ open: true, goal: g, amount: '', type: 'deposit', note: '' })}
+                        >
+                          Deposit Funds
+                        </button>
+                      </div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px solid #1f283b' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ flex: 1, justifyContent: 'center' }}
-                        onClick={() => setDepositModal({ open: true, goal: g, amount: '', type: 'withdraw', note: '' })}
-                      >
-                        Withdraw
-                      </button>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        style={{ flex: 1, justifyContent: 'center' }}
-                        onClick={() => setDepositModal({ open: true, goal: g, amount: '', type: 'deposit', note: '' })}
-                      >
-                        + Deposit Funds
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -1848,33 +1968,33 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'subscriptions' && (
           <div>
-            <div className="panel-card" style={{ marginBottom: '1.25rem' }}>
+            <div className="panel-card" style={{ marginBottom: 'var(--space-5)' }}>
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <Calendar size={17} style={{ color: '#f59e0b' }} />
+                    <Calendar size={18} strokeWidth={1.75} style={{ color: 'var(--accent-warning)' }} />
                     Monthly Recurring Bills & Subscription Timeline
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Plot recurring charges on their due date of the month. Never miss a billing cycle or incur penalty fees.
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Track recurring subscriptions and utilities on their monthly due dates to keep expenses predictable.
                   </p>
                 </div>
                 <div className="panel-actions">
                   <div style={{ textAlign: 'right', marginRight: '0.75rem' }}>
-                    <div style={{ fontSize: '0.725rem', color: '#94a3b8' }}>Total Monthly Recurring Burden</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#f43f5e' }}>
+                    <div className="caption" style={{ color: 'var(--text-secondary)' }}>Total Monthly Recurring Burden</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-expense)' }}>
                       {formatMoney(Math.round(totalMonthlySubCost))}/month
                     </div>
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={() => setIsAddSubOpen(true)}>
-                    <Plus size={13} /> Add Bill / Sub
+                    <Plus size={14} strokeWidth={1.75} /> Track Recurring Bill
                   </button>
                 </div>
               </div>
 
               {/* Day of Month Calendar Grid (1 - 31) */}
-              <div style={{ marginTop: '1rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ marginTop: 'var(--space-3)' }}>
+                <div className="caption" style={{ fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Billing Schedule ({selectedMonth})
                 </div>
 
@@ -1888,7 +2008,7 @@ export default function App() {
                       <div key={`day-${day}`} className={`calendar-day-cell ${isToday ? 'today' : ''}`}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span className="calendar-day-num">{day}</span>
-                          {isToday && <span style={{ fontSize: '0.65rem', color: '#6366f1', fontWeight: 600 }}>Today</span>}
+                          {isToday && <span style={{ fontSize: '0.65rem', color: 'var(--brand-primary)', fontWeight: 600 }}>Today</span>}
                         </div>
 
                         <div>
@@ -1899,9 +2019,9 @@ export default function App() {
                                 key={s.id}
                                 className="calendar-bill-pill"
                                 style={{
-                                  background: isPaid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                  color: isPaid ? '#10b981' : '#f59e0b',
-                                  border: `1px solid ${isPaid ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                                  background: isPaid ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                  color: isPaid ? 'var(--brand-primary)' : 'var(--accent-warning)',
+                                  border: `1px solid ${isPaid ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`,
                                 }}
                                 title={`${s.name} - ${formatMoney(s.amount)} (${isPaid ? 'Paid' : 'Upcoming'})`}
                               >
@@ -1921,9 +2041,14 @@ export default function App() {
             {/* Subscriptions Table */}
             <div className="panel-card">
               <div className="panel-header">
-                <div className="panel-title">
-                  <CreditCard size={17} style={{ color: '#6366f1' }} />
-                  Active Subscriptions & Direct Bill Payments
+                <div>
+                  <div className="panel-title">
+                    <CreditCard size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
+                    Active Subscriptions & Recurring Bills
+                  </div>
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Scheduled billing items and automated payment statuses.
+                  </p>
                 </div>
               </div>
 
@@ -1942,61 +2067,83 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {subscriptions.map((s) => {
-                      const isPaid = s.paidMonths?.includes(selectedMonth);
-                      return (
-                        <tr key={s.id}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{ color: s.color }}>{renderIcon(s.icon, 15)}</span>
-                              <strong>{s.name}</strong>
+                    {subscriptions.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" style={{ padding: 'var(--space-6)' }}>
+                          <div className="empty-state-card">
+                            <div className="empty-state-icon">
+                              <Calendar size={22} strokeWidth={1.75} />
                             </div>
-                          </td>
-                          <td>{s.category}</td>
-                          <td style={{ fontFamily: 'var(--font-mono)' }}>Day {s.dueDay}</td>
-                          <td>
-                            <span style={{ textTransform: 'capitalize' }}>{s.billingCycle}</span>
-                          </td>
-                          <td>
-                            {s.autoPay ? (
-                              <span className="badge-tag badge-emerald">Enabled</span>
-                            ) : (
-                              <span className="badge-tag badge-amber">Manual</span>
-                            )}
-                          </td>
-                          <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                            {formatMoney(s.amount)}
-                          </td>
-                          <td>
-                            {isPaid ? (
-                              <span className="badge-tag badge-emerald">Paid for {selectedMonth}</span>
-                            ) : (
-                              <span className="badge-tag badge-rose">Due for {selectedMonth}</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                              {!isPaid && (
-                                <button
-                                  className="btn btn-primary btn-sm"
-                                  style={{ padding: '0.2rem 0.5rem' }}
-                                  onClick={() => handlePaySubscription(s)}
-                                >
-                                  Mark Paid
-                                </button>
-                              )}
-                              <button
-                                className="btn btn-danger btn-sm"
-                                style={{ padding: '0.2rem 0.45rem' }}
-                                onClick={() => handleDeleteSubscription(s.id)}
-                              >
-                                <Trash2 size={12} />
+                            <div className="empty-state-content">
+                              <div className="empty-state-title">No recurring bills tracked</div>
+                              <p className="empty-state-desc">
+                                Add your active subscriptions, utilities, and memberships to get automatic billing notifications.
+                              </p>
+                              <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', marginTop: '0.35rem' }} onClick={() => setIsAddSubOpen(true)}>
+                                <Plus size={14} strokeWidth={1.75} /> Add First Recurring Bill
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      subscriptions.map((s) => {
+                        const isPaid = s.paidMonths?.includes(selectedMonth);
+                        return (
+                          <tr key={s.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ color: s.color || 'var(--brand-primary)' }}>{renderIcon(s.icon, 15)}</span>
+                                <strong>{s.name}</strong>
+                              </div>
+                            </td>
+                            <td>{s.category}</td>
+                            <td style={{ fontFamily: 'var(--font-mono)' }}>Day {s.dueDay}</td>
+                            <td>
+                              <span style={{ textTransform: 'capitalize' }}>{s.billingCycle}</span>
+                            </td>
+                            <td>
+                              {s.autoPay ? (
+                                <span className="badge-tag badge-emerald">Enabled</span>
+                              ) : (
+                                <span className="badge-tag badge-amber">Manual</span>
+                              )}
+                            </td>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                              {formatMoney(s.amount)}
+                            </td>
+                            <td>
+                              {isPaid ? (
+                                <span className="badge-tag badge-emerald">Paid for {selectedMonth}</span>
+                              ) : (
+                                <span className="badge-tag badge-rose">Due for {selectedMonth}</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                {!isPaid && (
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    style={{ padding: '0.2rem 0.5rem' }}
+                                    onClick={() => handlePaySubscription(s)}
+                                  >
+                                    Record Payment
+                                  </button>
+                                )}
+                                <button
+                                  className="btn btn-danger btn-sm"
+                                  style={{ padding: '0.2rem 0.45rem' }}
+                                  onClick={() => handleDeleteSubscription(s.id)}
+                                  title="Delete subscription"
+                                >
+                                  <Trash2 size={12} strokeWidth={1.75} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2009,24 +2156,24 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'simulator' && (
           <div>
-            <div className="panel-card" style={{ marginBottom: '1.25rem' }}>
+            <div className="panel-card" style={{ marginBottom: 'var(--space-5)' }}>
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <TrendingUp size={17} style={{ color: '#06b6d4' }} />
+                    <TrendingUp size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Net Worth Growth & Compound Interest Simulator
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Simulate how regular monthly SIP contributions compound into substantial long-term wealth over time.
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Simulate how regular monthly SIP contributions compound into long-term personal wealth over time.
                   </p>
                 </div>
               </div>
 
               {/* Sliders and Controls */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', marginTop: '0.5rem' }}>
                 <div className="sim-control-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Initial Principal</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Initial Principal</span>
                     <strong style={{ fontFamily: 'var(--font-mono)' }}>{formatMoney(simInitial)}</strong>
                   </div>
                   <input
@@ -2041,9 +2188,9 @@ export default function App() {
                 </div>
 
                 <div className="sim-control-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Monthly SIP Deposit</span>
-                    <strong style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>{formatMoney(simMonthly)}/mo</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Monthly SIP Deposit</span>
+                    <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-primary)' }}>{formatMoney(simMonthly)}/mo</strong>
                   </div>
                   <input
                     type="range"
@@ -2057,9 +2204,9 @@ export default function App() {
                 </div>
 
                 <div className="sim-control-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Expected Annual Return</span>
-                    <strong style={{ fontFamily: 'var(--font-mono)', color: '#06b6d4' }}>{simRate}% p.a.</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Expected Annual Return</span>
+                    <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-info)' }}>{simRate}% p.a.</strong>
                   </div>
                   <input
                     type="range"
@@ -2078,9 +2225,9 @@ export default function App() {
                 </div>
 
                 <div className="sim-control-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Time Horizon</span>
-                    <strong style={{ fontFamily: 'var(--font-mono)', color: '#6366f1' }}>{simYears} Years</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Time Horizon</span>
+                    <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-primary)' }}>{simYears} Years</strong>
                   </div>
                   <input
                     type="range"
@@ -2098,8 +2245,8 @@ export default function App() {
                       checked={adjustInflation}
                       onChange={(e) => setAdjustInflation(e.target.checked)}
                     />
-                    <label htmlFor="adjInf" style={{ fontSize: '0.75rem', color: '#94a3b8', cursor: 'pointer' }}>
-                      Adjust for 6% inflation
+                    <label htmlFor="adjInf" className="caption" style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                      Adjust for 6% annual inflation
                     </label>
                   </div>
                 </div>
@@ -2107,37 +2254,37 @@ export default function App() {
             </div>
 
             {/* Results KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div className="panel-card" style={{ borderLeft: '4px solid #64748b' }}>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Principal Invested</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, margin: '0.25rem 0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+              <div className="panel-card" style={{ borderLeft: '4px solid var(--text-muted)' }}>
+                <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Principal Invested</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 700, margin: '0.25rem 0' }}>
                   {formatMoney(simResults.totalInvested)}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Your hard-earned contributions</div>
+                <div className="caption" style={{ color: 'var(--text-muted)' }}>Your cumulative contributions</div>
               </div>
 
-              <div className="panel-card" style={{ borderLeft: '4px solid #10b981' }}>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Compound Wealth Gained</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, color: '#10b981', margin: '0.25rem 0' }}>
+              <div className="panel-card" style={{ borderLeft: '4px solid var(--brand-primary)' }}>
+                <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Compound Wealth Gained</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 700, color: 'var(--brand-primary)', margin: '0.25rem 0' }}>
                   +{formatMoney(simResults.wealthGain)}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Pure exponential interest returns</div>
+                <div className="caption" style={{ color: 'var(--text-muted)' }}>Pure exponential interest returns</div>
               </div>
 
-              <div className="panel-card" style={{ borderLeft: '4px solid #06b6d4' }}>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' }}>Future Estimated Net Worth</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.65rem', fontWeight: 700, color: '#06b6d4', margin: '0.25rem 0' }}>
+              <div className="panel-card" style={{ borderLeft: '4px solid var(--accent-info)' }}>
+                <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Future Estimated Portfolio</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.625rem', fontWeight: 700, color: 'var(--accent-info)', margin: '0.25rem 0' }}>
                   {formatMoney(simResults.futureValue)}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Portfolio value after {simYears} years</div>
+                <div className="caption" style={{ color: 'var(--text-muted)' }}>Estimated net value after {simYears} years</div>
               </div>
             </div>
 
             {/* Wealth Trajectory Area Chart */}
-            <div className="panel-card" style={{ marginBottom: '1.25rem' }}>
+            <div className="panel-card" style={{ marginBottom: 'var(--space-5)' }}>
               <div className="panel-header">
                 <div className="panel-title">
-                  <TrendingUp size={17} style={{ color: '#10b981' }} />
+                  <TrendingUp size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                   Compounding Trajectory Curve
                 </div>
               </div>
@@ -2146,20 +2293,20 @@ export default function App() {
                 <ResponsiveContainer>
                   <AreaChart data={simResults.schedule} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
-                    <XAxis dataKey="year" stroke="#64748b" tick={{ fill: '#94a3b8' }} />
-                    <YAxis stroke="#64748b" tick={{ fill: '#94a3b8' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
+                    <XAxis dataKey="year" stroke="#64748b" tick={{ fill: '#9ca3af' }} />
+                    <YAxis stroke="#64748b" tick={{ fill: '#9ca3af' }} tickFormatter={(v) => `${currencySymbol}${v >= 10000000 ? (v/10000000).toFixed(1) + 'Cr' : (v/100000).toFixed(1) + 'L'}`} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#131722',
-                        borderColor: '#21283b',
+                        backgroundColor: '#111827',
+                        borderColor: '#1f293d',
                         borderRadius: '8px',
-                        color: '#f8fafc',
+                        color: '#f9fafb',
                       }}
                       formatter={(val) => [formatMoney(val), '']}
                     />
                     <Legend wrapperStyle={{ paddingTop: 8 }} />
-                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#06b6d4" fill="rgba(6, 182, 212, 0.15)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#64748b" fill="rgba(100, 116, 139, 0.15)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="futureValue" name="Total Net Worth" stroke="#10b981" fill="rgba(16, 185, 129, 0.12)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="totalInvested" name="Invested Principal" stroke="#64748b" fill="rgba(100, 116, 139, 0.12)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -2169,7 +2316,7 @@ export default function App() {
             <div className="panel-card">
               <div className="panel-header">
                 <div className="panel-title">
-                  <Clock size={16} style={{ color: '#6366f1' }} />
+                  <Clock size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                   Year-by-Year Wealth Progression
                 </div>
               </div>
@@ -2188,8 +2335,8 @@ export default function App() {
                     {simResults.schedule.map((row, idx) => (
                       <tr key={`sim-row-${idx}`}>
                         <td><strong>{row.year}</strong></td>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>{formatMoney(row.totalInvested)}</td>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: '#10b981' }}>+{formatMoney(row.wealthGain)}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>{formatMoney(row.totalInvested)}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-primary)' }}>+{formatMoney(row.wealthGain)}</td>
                         <td style={{ fontFamily: 'var(--font-mono)', textAlign: 'right', fontWeight: 600 }}>{formatMoney(row.futureValue)}</td>
                       </tr>
                     ))}
@@ -2204,21 +2351,21 @@ export default function App() {
         {/* TAB 7: STATEMENTS & CSV IMPORT/EXPORT */}
         {/* ========================================================= */}
         {activeTab === 'statements' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
             {/* Printable Bank Statement Launcher */}
             <div className="panel-card">
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <Printer size={17} style={{ color: '#10b981' }} />
+                    <Printer size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Download Monthly Banking Statement (PDF)
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
                     Generate an official, branded financial account statement for {selectedMonth} suitable for audit, tax filing, or record-keeping.
                   </p>
                 </div>
                 <button className="btn btn-primary" onClick={() => setIsStatementModalOpen(true)}>
-                  <Printer size={15} /> Preview & Print Statement PDF
+                  <Printer size={14} strokeWidth={1.75} /> Preview & Print Statement PDF
                 </button>
               </div>
             </div>
@@ -2228,16 +2375,16 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <Upload size={17} style={{ color: '#6366f1' }} />
+                    <Upload size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Bank Statement CSV Import
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
-                    Import transaction statements from HDFC, SBI, ICICI, or payment apps into your personal FinPulse ledger.
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
+                    Import transaction statements exported from your bank or payment apps into your personal FinPulse ledger.
                   </p>
                 </div>
                 {csvImportData.length > 0 && (
                   <button className="btn btn-primary btn-sm" onClick={handleConfirmCsvImport}>
-                    Confirm Import ({csvImportData.length} entries)
+                    Import {csvImportData.length} Transactions to Ledger
                   </button>
                 )}
               </div>
@@ -2250,16 +2397,24 @@ export default function App() {
                   style={{ display: 'none' }}
                   onChange={handleCsvFileUpload}
                 />
-                <label htmlFor="csvFile" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <Upload size={28} style={{ color: '#6366f1' }} />
-                  <div style={{ fontWeight: 600 }}>{csvFileName || 'Click to select Bank Statement CSV'}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Format: Date, Description, Amount, Type</div>
+                <label htmlFor="csvFile" className="upload-drop-inner" style={{ cursor: 'pointer' }}>
+                  <div className="empty-state-icon">
+                    <Upload size={20} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                      {csvFileName || 'Choose a bank statement CSV'}
+                    </div>
+                    <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Compatible with HDFC, SBI, ICICI, and UPI exports (Columns: Date, Description, Amount, Type).
+                    </div>
+                  </div>
                 </label>
               </div>
 
               {csvImportData.length > 0 && (
-                <div style={{ marginTop: '1.25rem' }}>
-                  <div style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.5rem', color: '#10b981' }}>
+                <div style={{ marginTop: 'var(--space-4)' }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--brand-primary)' }}>
                     Previewing {csvImportData.length} Parsed Transactions:
                   </div>
                   <div className="table-wrapper" style={{ maxHeight: '240px', overflowY: 'auto' }}>
@@ -2275,7 +2430,7 @@ export default function App() {
                       <tbody>
                         {csvImportData.slice(0, 10).map((row, i) => (
                           <tr key={`csv-${i}`}>
-                            <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>{row.date}</td>
+                            <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>{row.date}</td>
                             <td>{row.note}</td>
                             <td>
                               <span className={`badge-tag ${row.type === 'income' ? 'badge-emerald' : 'badge-rose'}`}>
@@ -2297,15 +2452,15 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <div className="panel-title">
-                    <Download size={17} style={{ color: '#06b6d4' }} />
+                    <Download size={18} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
                     Export Full Ledger Data
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                  <p className="body-quiet" style={{ marginTop: '0.25rem' }}>
                     Download a raw spreadsheet of all categorized transactions with timestamps and payment modes.
                   </p>
                 </div>
                 <button className="btn btn-secondary btn-sm" onClick={handleExportCSV}>
-                  <Download size={14} /> Download CSV
+                  <Download size={14} strokeWidth={1.75} /> Export Ledger CSV
                 </button>
               </div>
             </div>
@@ -2319,9 +2474,14 @@ export default function App() {
           <div className="modal-overlay" onClick={() => setIsAddTxOpen(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <div className="modal-title">New Financial Entry</div>
+                <div>
+                  <div className="modal-title">Record Transaction</div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Log an income or expense entry to your personal ledger.
+                  </div>
+                </div>
                 <button className="modal-close" onClick={() => setIsAddTxOpen(false)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
@@ -2350,7 +2510,7 @@ export default function App() {
                       type="number"
                       step="0.01"
                       required
-                      placeholder="e.g. 2400"
+                      placeholder="0.00"
                       className="form-input"
                       value={txForm.amount}
                       onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
@@ -2404,7 +2564,7 @@ export default function App() {
                     <label className="form-label">Description / Merchant</label>
                     <input
                       type="text"
-                      placeholder="e.g. Blue Tokai Coffee / AWS Hosting"
+                      placeholder="e.g. Grocery restock at Whole Foods"
                       className="form-input"
                       value={txForm.note}
                       onChange={(e) => setTxForm({ ...txForm, note: e.target.value })}
@@ -2413,7 +2573,7 @@ export default function App() {
 
                   {/* Receipt & Invoice Attachment */}
                   <div className="form-group">
-                    <label className="form-label">Attach Receipt / Invoice (Optional)</label>
+                    <label className="form-label">Attach Receipt or Invoice (Optional)</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                       <input
                         type="file"
@@ -2423,11 +2583,11 @@ export default function App() {
                         onChange={handleReceiptFileChange}
                       />
                       <label htmlFor="receiptUpload" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
-                        <Upload size={13} /> {txForm.receiptName ? 'Change Receipt' : 'Upload Receipt'}
+                        <Upload size={14} strokeWidth={1.75} /> {txForm.receiptName ? 'Change Attached Receipt' : 'Upload Receipt / Bill'}
                       </label>
                       {txForm.receiptName && (
-                        <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <CheckCircle size={13} /> {txForm.receiptName.slice(0, 16)}...
+                        <span style={{ fontSize: '0.75rem', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <CheckCircle size={13} strokeWidth={1.75} /> {txForm.receiptName.slice(0, 16)}...
                         </span>
                       )}
                     </div>
@@ -2440,8 +2600,8 @@ export default function App() {
                       checked={txForm.isRecurring}
                       onChange={(e) => setTxForm({ ...txForm, isRecurring: e.target.checked })}
                     />
-                    <label htmlFor="isRecurring" style={{ fontSize: '0.825rem', cursor: 'pointer', color: '#cbd5e1' }}>
-                      Mark as recurring monthly expense / income
+                    <label htmlFor="isRecurring" className="caption" style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                      Mark as recurring monthly transaction
                     </label>
                   </div>
                 </div>
@@ -2451,7 +2611,7 @@ export default function App() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Save to Ledger
+                    Save Transaction to Ledger
                   </button>
                 </div>
               </form>
@@ -2468,33 +2628,33 @@ export default function App() {
               <div className="modal-header">
                 <div>
                   <div className="modal-title">Receipt: {inspectReceipt.note || inspectReceipt.categoryName}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                     {inspectReceipt.date} • {formatMoney(inspectReceipt.amount)} ({inspectReceipt.paymentMode})
                   </div>
                 </div>
                 <button className="modal-close" onClick={() => setInspectReceipt(null)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
-              <div className="modal-body" style={{ alignItems: 'center', justifyContent: 'center', background: '#090a0f', padding: '1.5rem' }}>
+              <div className="modal-body" style={{ alignItems: 'center', justifyContent: 'center', background: '#090d14', padding: '1.5rem' }}>
                 {inspectReceipt.receiptUrl ? (
                   <img
                     src={inspectReceipt.receiptUrl}
                     alt="Receipt Attachment"
-                    style={{ maxWidth: '100%', maxHeight: '480px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #21283b' }}
+                    style={{ maxWidth: '100%', maxHeight: '480px', objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--border-color)' }}
                   />
                 ) : (
-                  <div style={{ color: '#64748b' }}>No receipt image available.</div>
+                  <div style={{ color: 'var(--text-muted)' }}>No receipt preview available.</div>
                 )}
               </div>
 
               <div className="modal-footer">
                 <a href={inspectReceipt.receiptUrl} download={`receipt-${inspectReceipt.id}.png`} className="btn btn-secondary btn-sm">
-                  <Download size={13} /> Download File
+                  <Download size={14} strokeWidth={1.75} /> Download Receipt
                 </a>
                 <button className="btn btn-primary btn-sm" onClick={() => setInspectReceipt(null)}>
-                  Close
+                  Close Preview
                 </button>
               </div>
             </div>
@@ -2510,43 +2670,43 @@ export default function App() {
               <div className="modal-header">
                 <div>
                   <div className="modal-title">Monthly Account Statement</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
                     Account Holder: <strong>{currentUser?.name}</strong> ({currentUser?.email}) • Period: {selectedMonth}
                   </div>
                 </div>
                 <button className="modal-close" onClick={() => setIsStatementModalOpen(false)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
               <div className="modal-body" style={{ gap: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #21283b', paddingBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800 }}>FinPulse Wealth Operating System</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Official Ledger Summary Statement</div>
+                    <div className="caption" style={{ color: 'var(--text-secondary)' }}>Official Ledger Summary Statement</div>
                   </div>
-                  <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    <div>Report Date: {new Date().toISOString().slice(0, 10)}</div>
-                    <div>Account Currency: {currentUser?.currency || 'INR'} ({currencySymbol})</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="caption" style={{ color: 'var(--text-secondary)' }}>Report Date: {new Date().toISOString().slice(0, 10)}</div>
+                    <div className="caption" style={{ color: 'var(--text-secondary)' }}>Account Currency: {currentUser?.currency || 'INR'} ({currencySymbol})</div>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                  <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Inflows</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#10b981', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 8 }}>
+                    <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Inflows</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-income)', fontFamily: 'var(--font-mono)' }}>
                       +{formatMoney(summary.totalIncome)}
                     </div>
                   </div>
-                  <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Outflows</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f43f5e', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 8 }}>
+                    <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Outflows</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-expense)', fontFamily: 'var(--font-mono)' }}>
                       -{formatMoney(summary.totalExpense)}
                     </div>
                   </div>
-                  <div style={{ background: '#0e111a', border: '1px solid #21283b', padding: '0.75rem', borderRadius: 8 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Net Surplus / Savings</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#06b6d4', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 8 }}>
+                    <div className="caption" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Net Surplus / Savings</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-info)', fontFamily: 'var(--font-mono)' }}>
                       {formatMoney(summary.netSavings)}
                     </div>
                   </div>
@@ -2588,7 +2748,7 @@ export default function App() {
                   Close
                 </button>
                 <button type="button" className="btn btn-primary" onClick={() => window.print()}>
-                  <Printer size={14} /> Print / Save as PDF
+                  <Printer size={14} strokeWidth={1.75} /> Print / Save as PDF
                 </button>
               </div>
             </div>
@@ -2602,9 +2762,14 @@ export default function App() {
           <div className="modal-overlay" onClick={() => setIsAddGoalOpen(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <div className="modal-title">New Savings Vault</div>
+                <div>
+                  <div className="modal-title">Create Savings Vault</div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Set up a dedicated fund with a target balance and timeline.
+                  </div>
+                </div>
                 <button className="modal-close" onClick={() => setIsAddGoalOpen(false)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
@@ -2615,7 +2780,7 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Emergency Fund (6 Months)"
+                      placeholder="e.g. 6-Month Emergency Fund"
                       className="form-input"
                       value={goalForm.title}
                       onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })}
@@ -2636,7 +2801,7 @@ export default function App() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Initial Seed ({currencySymbol})</label>
+                      <label className="form-label">Initial Deposit ({currencySymbol})</label>
                       <input
                         type="number"
                         placeholder="e.g. 25000"
@@ -2680,7 +2845,7 @@ export default function App() {
                     <label className="form-label">Notes & Purpose</label>
                     <input
                       type="text"
-                      placeholder="e.g. Overnight liquid mutual fund allocation"
+                      placeholder="e.g. Liquid mutual fund or high-interest deposit"
                       className="form-input"
                       value={goalForm.note}
                       onChange={(e) => setGoalForm({ ...goalForm, note: e.target.value })}
@@ -2693,7 +2858,7 @@ export default function App() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Create Vault
+                    Open Savings Vault
                   </button>
                 </div>
               </form>
@@ -2708,11 +2873,16 @@ export default function App() {
           <div className="modal-overlay" onClick={() => setDepositModal({ open: false, goal: null, amount: '', type: 'deposit', note: '' })}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <div className="modal-title">
-                  {depositModal.type === 'deposit' ? 'Deposit Funds' : 'Withdraw Funds'}: {depositModal.goal?.title}
+                <div>
+                  <div className="modal-title">
+                    {depositModal.type === 'deposit' ? 'Deposit Funds' : 'Withdraw Funds'}: {depositModal.goal?.title}
+                  </div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Current vault balance: {formatMoney(depositModal.goal?.savedAmount || 0)}
+                  </div>
                 </div>
                 <button className="modal-close" onClick={() => setDepositModal({ open: false, goal: null, amount: '', type: 'deposit', note: '' })}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
@@ -2743,7 +2913,7 @@ export default function App() {
                     <input
                       type="number"
                       required
-                      placeholder="e.g. 10000"
+                      placeholder="0.00"
                       className="form-input"
                       value={depositModal.amount}
                       onChange={(e) => setDepositModal({ ...depositModal, amount: e.target.value })}
@@ -2754,7 +2924,7 @@ export default function App() {
                     <label className="form-label">Note / Reference</label>
                     <input
                       type="text"
-                      placeholder="e.g. November monthly surplus allocation"
+                      placeholder="e.g. Monthly surplus contribution"
                       className="form-input"
                       value={depositModal.note}
                       onChange={(e) => setDepositModal({ ...depositModal, note: e.target.value })}
@@ -2782,9 +2952,14 @@ export default function App() {
           <div className="modal-overlay" onClick={() => setIsAddSubOpen(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <div className="modal-title">Track Recurring Bill / Subscription</div>
+                <div>
+                  <div className="modal-title">Track Recurring Bill</div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Schedule a recurring expense on your monthly calendar.
+                  </div>
+                </div>
                 <button className="modal-close" onClick={() => setIsAddSubOpen(false)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
@@ -2795,7 +2970,7 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Spotify Family / Electricity"
+                      placeholder="e.g. High-speed home fiber internet"
                       className="form-input"
                       value={subForm.name}
                       onChange={(e) => setSubForm({ ...subForm, name: e.target.value })}
@@ -2808,7 +2983,7 @@ export default function App() {
                       <input
                         type="number"
                         required
-                        placeholder="e.g. 649"
+                        placeholder="e.g. 999"
                         className="form-input"
                         value={subForm.amount}
                         onChange={(e) => setSubForm({ ...subForm, amount: e.target.value })}
@@ -2870,7 +3045,7 @@ export default function App() {
                       checked={subForm.autoPay}
                       onChange={(e) => setSubForm({ ...subForm, autoPay: e.target.checked })}
                     />
-                    <label htmlFor="subAutoPay" style={{ fontSize: '0.825rem', cursor: 'pointer', color: '#cbd5e1' }}>
+                    <label htmlFor="subAutoPay" className="caption" style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}>
                       Auto-Debit is active on bank card
                     </label>
                   </div>
@@ -2881,7 +3056,7 @@ export default function App() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Start Tracking
+                    Start Tracking Bill
                   </button>
                 </div>
               </form>
@@ -2896,18 +3071,19 @@ export default function App() {
           <div className="modal-overlay" onClick={() => setIsEditBudgetOpen(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <div className="modal-title">Set Monthly Budget Limit</div>
+                <div>
+                  <div className="modal-title">Configure Monthly Budget Cap</div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Set a spending target for <strong>{budgetForm.name}</strong>.
+                  </div>
+                </div>
                 <button className="modal-close" onClick={() => setIsEditBudgetOpen(false)}>
-                  <X size={18} />
+                  <X size={18} strokeWidth={1.75} />
                 </button>
               </div>
 
               <form onSubmit={handleUpdateBudgetSubmit}>
                 <div className="modal-body">
-                  <p style={{ fontSize: '0.835rem', color: '#94a3b8' }}>
-                    Configure the monthly spending ceiling for <strong>{budgetForm.name}</strong>.
-                  </p>
-
                   <div className="form-group">
                     <label className="form-label">Monthly Limit ({currencySymbol})</label>
                     <input
@@ -2926,7 +3102,7 @@ export default function App() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Update Budget
+                    Save Budget Cap
                   </button>
                 </div>
               </form>
@@ -2937,11 +3113,10 @@ export default function App() {
         {/* Global Toast */}
         {toast && (
           <div className="toast-msg">
-            <Sparkles size={15} style={{ color: '#10b981' }} />
+            <CheckCircle size={16} strokeWidth={1.75} style={{ color: 'var(--brand-primary)' }} />
             <span>{toast.message}</span>
           </div>
         )}
       </div>
-    </>
   );
 }
