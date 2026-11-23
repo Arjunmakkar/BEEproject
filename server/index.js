@@ -95,12 +95,15 @@ async function initStorage() {
     return;
   }
 
+  const maskedUri = MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+  console.log(`[MongoDB] Connecting to ${maskedUri}...`);
+
   try {
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 1500,
+      serverSelectionTimeoutMS: 10000,
     });
     isMongoConnected = true;
-    console.log(`[MongoDB] Connected successfully to ${MONGODB_URI}`);
+    console.log(`[MongoDB] Connected successfully to ${maskedUri}`);
 
     // Seed Demo User if empty
     const userCount = await User.countDocuments();
@@ -110,11 +113,17 @@ async function initStorage() {
       await Transaction.insertMany(memTransactions);
       await Goal.insertMany(memGoals);
       await Subscription.insertMany(memSubscriptions);
-      console.log(`[MongoDB] Seeded demo account data.`);
+      console.log(`[MongoDB] Initial cloud database seeded with default demo datasets.`);
+    } else {
+      console.log(`[MongoDB] Online database verified (${userCount} registered accounts found).`);
     }
   } catch (err) {
     isMongoConnected = false;
-    console.log(`[MongoDB] Notice: MongoDB not connected (${err.message}). FinPulse is running seamlessly in local mode.`);
+    console.error(`[MongoDB] Connection failed (${err.message}).`);
+    console.log('[MongoDB Tip] If using MongoDB Atlas:');
+    console.log('  1. Check Network Access in Atlas: ensure your IP or 0.0.0.0/0 (allow from anywhere) is whitelisted.');
+    console.log('  2. Check Database Users: make sure the username & password in MONGODB_URI are correct.');
+    console.log('  3. FinPulse will seamlessly fall back to local mode in the meantime.');
   }
 }
 
