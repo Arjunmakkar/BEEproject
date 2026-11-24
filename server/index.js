@@ -100,6 +100,7 @@ async function initStorage() {
 
   try {
     await mongoose.connect(MONGODB_URI, {
+      dbName: 'finpulse',
       serverSelectionTimeoutMS: 10000,
     });
     isMongoConnected = true;
