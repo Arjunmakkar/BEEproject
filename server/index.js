@@ -279,6 +279,61 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Dedicated 1-Click Demo JWT Auth Endpoint
+app.post('/api/auth/demo', async (req, res) => {
+  try {
+    let demoUser = null;
+    if (isMongoConnected) {
+      demoUser = await User.findOne({ email: 'demo@finpulse.app' }).lean();
+      if (!demoUser) {
+        const fallback = memUsers.find((u) => u.email === 'demo@finpulse.app');
+        if (fallback) {
+          const u = new User(fallback);
+          await u.save();
+          demoUser = fallback;
+        }
+      }
+    } else {
+      demoUser = memUsers.find((u) => u.email === 'demo@finpulse.app');
+    }
+
+    if (!demoUser) {
+      return res.status(404).json({ error: 'Demo user account not available' });
+    }
+
+    const token = jwt.sign(
+      { userId: demoUser.id, email: demoUser.email, name: demoUser.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Logged in as Demo User',
+      token,
+      user: {
+        id: demoUser.id,
+        name: demoUser.name,
+        email: demoUser.email,
+        currency: demoUser.currency || 'USD',
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Demo authentication failed' });
+  }
+});
+
+// Verify active JWT token validity
+app.get('/api/auth/verify', requireAuth, (req, res) => {
+  res.json({
+    valid: true,
+    user: {
+      userId: req.user.userId,
+      email: req.user.email,
+      name: req.user.name,
+    },
+  });
+});
+
 app.get('/api/auth/me', requireAuth, async (req, res) => {
   try {
     let user = null;

@@ -293,6 +293,20 @@ export default function App() {
     }
   }, [handleLogout]);
 
+  // Verify JWT session on app load
+  useEffect(() => {
+    if (!token) return;
+    authFetch('/api/auth/me').then(async (res) => {
+      if (res && res.ok) {
+        const u = await res.json();
+        setCurrentUser(u);
+        localStorage.setItem('finpulse_user', JSON.stringify(u));
+      } else if (res && res.status === 401) {
+        handleLogout();
+      }
+    });
+  }, [token, authFetch, handleLogout]);
+
   // Handle Auth Login / Register
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -339,10 +353,9 @@ export default function App() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'demo@finpulse.app', password: 'password123' }),
       });
       const data = await res.json();
       if (res.ok) {
