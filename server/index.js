@@ -177,6 +177,10 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
 
     // Check existing
     if (isMongoConnected) {
@@ -366,7 +370,7 @@ app.put('/api/auth/profile', requireAuth, async (req, res) => {
       const updated = await User.findOneAndUpdate(
         { id: req.userId },
         {
-          ...(name && { name }),
+          ...(name && { name: name.trim() }),
           ...(currency && { currency }),
         },
         { new: true }
@@ -376,12 +380,65 @@ app.put('/api/auth/profile', requireAuth, async (req, res) => {
 
     const u = memUsers.find((user) => user.id === req.userId);
     if (!u) return res.status(404).json({ error: 'User not found' });
-    if (name) u.name = name;
+    if (name) u.name = name.trim();
     if (currency) u.currency = currency;
 
     res.json({ id: u.id, name: u.name, email: u.email, currency: u.currency });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Change Password Endpoint
+app.put('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Please provide both current and new password' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    let user = null;
+    if (isMongoConnected) {
+      user = await User.findOne({ id: req.userId });
+    } else {
+      user = memUsers.find((u) => u.id === req.userId);
+    }
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = newHash;
+
+    if (isMongoConnected) {
+      await user.save();
+    }
+
+    res.json({ message: 'Password changed successfully. You can now use your new password.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// Refresh Token Endpoint
+app.post('/api/auth/refresh', requireAuth, (req, res) => {
+  try {
+    const freshToken = jwt.sign(
+      { userId: req.user.userId, email: req.user.email, name: req.user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({ token: freshToken, user: req.user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to refresh token' });
   }
 });
 

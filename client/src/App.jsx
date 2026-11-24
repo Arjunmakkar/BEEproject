@@ -169,6 +169,13 @@ export default function App() {
   const [csvImportData, setCsvImportData] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
 
+  // Account Profile & Security State
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileNameInput, setProfileNameInput] = useState('');
+  const [passwordChangeForm, setPasswordChangeForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState({ text: '', type: '' });
+
   // Compound Interest Simulator State
   const [simInitial, setSimInitial] = useState(100000);
   const [simMonthly, setSimMonthly] = useState(15000);
@@ -390,6 +397,74 @@ export default function App() {
       }
     } catch {
       showToast('Failed to update currency');
+    }
+  };
+
+  // Open Profile & Security Modal
+  const handleOpenProfileModal = () => {
+    setProfileNameInput(currentUser?.name || '');
+    setPasswordChangeForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordMsg({ text: '', type: '' });
+    setIsProfileModalOpen(true);
+  };
+
+  // Update Profile Name
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!profileNameInput.trim()) return;
+    try {
+      const res = await authFetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: profileNameInput.trim() }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setCurrentUser(updated);
+        localStorage.setItem('finpulse_user', JSON.stringify(updated));
+        showToast('Profile updated successfully!', 'success');
+      } else {
+        showToast('Failed to update profile', 'error');
+      }
+    } catch {
+      showToast('Network error updating profile', 'error');
+    }
+  };
+
+  // Change Password
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordChangeForm.newPassword !== passwordChangeForm.confirmPassword) {
+      setPasswordMsg({ text: 'New passwords do not match', type: 'error' });
+      return;
+    }
+    if (passwordChangeForm.newPassword.length < 6) {
+      setPasswordMsg({ text: 'New password must be at least 6 characters', type: 'error' });
+      return;
+    }
+    setPasswordLoading(true);
+    setPasswordMsg({ text: '', type: '' });
+    try {
+      const res = await authFetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordChangeForm.currentPassword,
+          newPassword: passwordChangeForm.newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPasswordMsg({ text: data.message || 'Password changed successfully!', type: 'success' });
+        setPasswordChangeForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        showToast('Password changed successfully!', 'success');
+      } else {
+        setPasswordMsg({ text: data.error || 'Failed to change password', type: 'error' });
+      }
+    } catch {
+      setPasswordMsg({ text: 'Network error changing password', type: 'error' });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -1208,8 +1283,15 @@ export default function App() {
               <Bell size={15} />
               <span className="subnav-notification-dot" />
             </button>
-            <span className="subnav-username">{currentUser?.name || 'Chris'}</span>
-            <div className="subnav-avatar">{initials}</div>
+            <button
+              type="button"
+              className="subnav-user-profile-btn"
+              onClick={handleOpenProfileModal}
+              title="Account Settings & Security"
+            >
+              <span className="subnav-username">{currentUser?.name || 'Chris'}</span>
+              <div className="subnav-avatar">{initials}</div>
+            </button>
             <button className="subnav-signout-btn" onClick={handleLogout} title="Sign Out of Account">
               <LogOut size={13} />
             </button>
@@ -3281,6 +3363,150 @@ export default function App() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* MODAL: ACCOUNT PROFILE & SECURITY (JWT AUTH) */}
+        {/* ========================================================= */}
+        {isProfileModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsProfileModalOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+              <div className="modal-header">
+                <div>
+                  <div className="modal-title">Account & Security</div>
+                  <div className="caption" style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Authenticated session details and password management.
+                  </div>
+                </div>
+                <button className="modal-close" onClick={() => setIsProfileModalOpen(false)}>
+                  <X size={18} strokeWidth={1.75} />
+                </button>
+              </div>
+
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* User Identity Details */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.85rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                    Active JWT Session
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Email:</span>
+                      <div style={{ fontWeight: 600, color: '#1e293b' }}>{currentUser?.email}</div>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Account ID:</span>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#1e293b' }}>{currentUser?.id}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Edit Display Name */}
+                <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Display Name</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        required
+                        className="form-input"
+                        style={{ flex: 1 }}
+                        value={profileNameInput}
+                        onChange={(e) => setProfileNameInput(e.target.value)}
+                      />
+                      <button type="submit" className="btn btn-secondary btn-sm">
+                        Update
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Change Password Form */}
+                <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>
+                    Change Password
+                  </div>
+
+                  {passwordMsg.text && (
+                    <div style={{
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8125rem',
+                      background: passwordMsg.type === 'success' ? '#ecfdf5' : '#fff1f2',
+                      color: passwordMsg.type === 'success' ? '#16a34a' : '#e11d48',
+                      border: `1px solid ${passwordMsg.type === 'success' ? '#bbf7d0' : '#fecdd3'}`,
+                    }}>
+                      {passwordMsg.text}
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="form-label">Current Password</label>
+                    <input
+                      type="password"
+                      required
+                      className="form-input"
+                      placeholder="Enter current password"
+                      value={passwordChangeForm.currentPassword}
+                      onChange={(e) => setPasswordChangeForm({ ...passwordChangeForm, currentPassword: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      className="form-input"
+                      placeholder="At least 6 characters"
+                      value={passwordChangeForm.newPassword}
+                      onChange={(e) => setPasswordChangeForm({ ...passwordChangeForm, newPassword: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      className="form-input"
+                      placeholder="Repeat new password"
+                      value={passwordChangeForm.confirmPassword}
+                      onChange={(e) => setPasswordChangeForm({ ...passwordChangeForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ alignSelf: 'flex-start', marginTop: '0.25rem' }}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? 'Updating Password...' : 'Save New Password'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => { setIsProfileModalOpen(false); handleLogout(); }}
+                >
+                  <LogOut size={13} /> Sign Out of Account
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsProfileModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
